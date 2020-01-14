@@ -4,6 +4,11 @@
 ##                                                                  ##                                 
 ######################################################################
 
+# created by François Gardavaud
+# date : 01/14/2020
+
+
+###################### set-up section ################################
 # Workspace cleanning
 rm(list = ls(all.names = TRUE))
 
@@ -43,13 +48,15 @@ if(!require(tictoc)){
   library(tictoc)
 }
 
-
+###################### import and taylor data section ##################################
 # read the database
 # my_all_data <- read_excel("data/CV-IR_Tenon_Radiologie_detailed_data_export_tronque.xlsx")
+tic("to import detailled data in Rstudio")
 my_all_data <- read_excel("data/CV-IR_Tenon_Radiologie_detailed_data_export.xlsx")
+toc()
 
 # Collums of interest selection
-selection = c("Study date (YYYY-MM-DD)", "Accession number", "Patient ID", "Patient birthdate (YYYY-MM-DD)",
+selection = c("Study date (YYYY-MM-DD)","Study date", "Accession number", "Patient ID", "Patient birthdate (YYYY-MM-DD)",
               "Patient weight (kg)", "Patient size (cm)",
               "BMI", "Standard study description", "Performing physician last name",
               "Image and Fluoroscopy Dose Area Product (mGy.cm2)", "Total Time of Fluoroscopy (s)",
@@ -62,25 +69,26 @@ age_patient <- rep(0, nrow(DRL_data))
 # age_tampon <- rep(0, 1000)
 
 # instance the today date in appropriate format
-evt <- ymd_hms(now())
+#evt <- ymd_hms(now())
 
-#Loop to calculate patient age in years and add this information to DRL_data dataframe
+#Loop without parallelization to calculate patient age in years and add this information to DRL_data dataframe
 
 # tic("for loop without parallelization")
 # loop_lenght <- c(1:nrow(DRL_data))
 # for (i in loop_lenght) {
-# naiss <- ymd_hms(DRL_data[i,4])
+# naiss <- ymd_hms(DRL_data[i,5])
 # age <- as.period(interval(naiss, evt))@year
 # age_patient[i] <- age
 # }
 # DRL_data <-cbind(DRL_data,age_patient)
 # toc()
 
-tic("for loop with parallelization 2nd try")
+tic("for loop with parallelization")
 cores <- detectCores()
-registerDoMC(cores - 2)
+registerDoMC(cores - 1)
 age_patient <- foreach(i = 1:nrow(DRL_data)) %dopar% {
-  naiss = ymd_hms(DRL_data[i,4])
+  naiss = ymd_hms(DRL_data[i,5])
+  evt = ymd(DRL_data[i,2])
   age = as.period(interval(naiss, evt))@year
   age_patient <- age
 }
@@ -91,6 +99,8 @@ DRL_data <-cbind(DRL_data,age_patient)
 
 
 
+
+################ DRL establishement section ########################
 
 
 
