@@ -9,8 +9,6 @@
 
 
 ###################### set-up section ################################
-# Workspace cleanning
-rm(list = ls(all.names = TRUE))
 
 # Set the projet path to the root level
 root.dir = rprojroot::find_rstudio_root_file()
@@ -48,19 +46,30 @@ if(!require(tictoc)){
   library(tictoc)
 }
 
-###################### import and taylor data section ##################################
+############################### data import section ##################################
 # read the database
 # my_all_data <- read_excel("data/CV-IR_Tenon_Radiologie_detailed_data_export_tronque.xlsx")
+
+## /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+# unfortunetely Excel importation yield to parse errors in date data for instance.
+# SO TO AVIOD THIS PROBLEM THE USER HAVE TO IMPORT DATA IN CSV FORMAT 
+# BY CONVERTING ORIGINAL DATA FROM .XLSX TO .CSV IN EXCEL SOFTWARE
+# /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+
 tic("to import detailled data in Rstudio")
-my_all_data <- read_excel("data/CV-IR_Tenon_Radiologie_detailed_data_export.xlsx")
+#my_all_data <- read.csv2("data/CV-IR_Tenon_Radiologie_detailed_data_export_tronque.csv", sep = ";")
+my_all_data <- read.csv2("data/CV-IR_Tenon_Radiologie_detailed_data_export.csv", sep = ";")
 toc()
 
+
+
+################################## data taylor section ##################################
 # Collums of interest selection
-selection = c("Study date (YYYY-MM-DD)","Study date", "Accession number", "Patient ID", "Patient birthdate (YYYY-MM-DD)",
-              "Patient weight (kg)", "Patient size (cm)",
-              "BMI", "Standard study description", "Performing physician last name",
-              "Image and Fluoroscopy Dose Area Product (mGy.cm2)", "Total Time of Fluoroscopy (s)",
-              "Total Air Kerma (mGy)", "Irradiation Event Type", "Total Number of Radiographic Frames")
+selection = c("Study.date..YYYY.MM.DD.", "Accession.number", "Patient.ID", "Patient.birthdate..YYYY.MM.DD.",
+              "Patient.weight..kg.", "Patient.size..cm.",
+              "BMI", "Standard.study.description", "Performing.physician.last.name",
+              "Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.", "Total.Time.of.Fluoroscopy..s.",
+              "Total.Air.Kerma..mGy.", "Irradiation.Event.Type", "Total.Number.of.Radiographic.Frames")
 # data filter to keep only interested collums for DRL computation
 DRL_data <- my_all_data[,selection]
 
@@ -87,8 +96,8 @@ tic("for loop with parallelization")
 cores <- detectCores()
 registerDoMC(cores - 1)
 age_patient <- foreach(i = 1:nrow(DRL_data)) %dopar% {
-  naiss = ymd_hms(DRL_data[i,5])
-  evt = ymd(DRL_data[i,2])
+  naiss = ymd_hms(DRL_data[i,4])
+  evt = as.POSIXct(DRL_data[i,1])
   age = as.period(interval(naiss, evt))@year
   age_patient <- age
 }
