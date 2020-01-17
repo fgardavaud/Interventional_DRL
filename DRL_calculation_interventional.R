@@ -111,5 +111,13 @@ DRL_data <-cbind(DRL_data,age_patient)
 
 ################ DRL establishement section ########################
 
-
+# A faire :
+# faire des subset en fonction de la description clinique d'intérêt
+# TIPS, chimioembol hépatique, drainage biliaire, embolisation artères bronchiques, embolisation fibrome utérin, TIPS, vertébroplastie
+# colonne avec facteurs à 49 niveaux
+# attention à faire correpondre avec la labellisation locale
+# faire un test pour chaque subset pour savoir si les valeurs de la colonne Irradiation.Event.Type comporte au moins une fois "ROTATIONAL_ACQUISITION" 
+# colonne avec facteurs à 4 niveaux
+# si oui => CBCT; sinon => pas de CBCT.
+# prendre aléatoirement dans chaque subset 10 lignes consécutives et généré un fichier .csv avec le même canave que le fichier .csv de l'INSTN.
 
