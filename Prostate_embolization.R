@@ -6,7 +6,7 @@
 ######################################################################
 
 # created by François Gardavaud
-# date : 01/24/2020
+# date : 02/03/2020
 
 ###################### set-up section ################################
 
@@ -44,6 +44,10 @@ if(!require(foreach)){
 if(!require(tictoc)){
   install.packages("tictoc")
   library(tictoc)
+}
+if(!require(tidyverse)){
+  install.packages("tidyverse")
+  library(tidyverse)
 }
 
 ############################### data import section ##################################
@@ -133,11 +137,18 @@ Study_data_age <-cbind(Study_data,age_patient)
 Study_data_prostate <- subset(Study_data_age, Standard.study.description == "EMBOLISATION PROSTATIQUE")
 # patient number control
 patient_number <- length(unique(Study_data_prostate[,"Patient.ID"]))
-# patient ID control with Mathias list
-patient_list <- as.data.frame(unique(Study_data_prostate[,"Patient.ID"]))
+# patient ID control with Mathias list to verify if selectde patients are identical than matthias' list
 patient_list_matthias <- read.csv2("data/Liste_patient_matthias.csv", sep = ";")
-patient_list_cat <- cbind.fill(patient_list,patient_list_matthias)
-#duplicated(patient_list_cat[,1:3])
+patient_list_matthias_DW <- as.data.frame(patient_list_matthias[,2])
+colnames(patient_list_matthias_DW) <- 'Patient.ID.Matthias'
+patient_list_matthias <- as.array(patient_list_matthias[,2])
+patient_list <- as.array(unique(Study_data_prostate[,"Patient.ID"]))
+
+patient_number_verified <- length(intersect(patient_list, patient_list_matthias))
+
+# patient_list_cat %>%
+#   distinct(Patient.ID.Script, Patient.ID.Matthias, .keep_all = TRUE)
+# duplicated(patient_list_cat[,1:2])
 # write.csv(patient_list, "data/liste_de_patient.csv")
 
 
