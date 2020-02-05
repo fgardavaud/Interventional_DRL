@@ -6,18 +6,18 @@
 ######################################################################
 
 # created by François Gardavaud
-# date : 02/03/2020
+# date : 02/05/2020
 
 ###################### set-up section ################################
 
 # Set the projet path to the root level
 root.dir = rprojroot::find_rstudio_root_file()
 
-# load readxl package to read easyly Excel file with an install conditon
-if(!require(readxl)){
-  install.packages("readxl")
-  library(readxl)
-}
+# # load readxl package to read easyly Excel file with an install conditon
+# if(!require(readxl)){
+#   install.packages("readxl")
+#   library(readxl)
+# }
 
 # load lubridate package to determine patient age from birthdate with an install conditon
 if(!require(lubridate)){
@@ -45,10 +45,16 @@ if(!require(tictoc)){
   install.packages("tictoc")
   library(tictoc)
 }
-if(!require(tidyverse)){
-  install.packages("tidyverse")
-  library(tidyverse)
+# load excel package to write results in Excel file
+if(!require(openxlsx)){
+  install.packages("openxlsx")
+  library(openxlsx)
 }
+# load tidyverse if necessary for data handling
+# if(!require(tidyverse)){
+#   install.packages("tidyverse")
+#   library(tidyverse)
+# }
 
 ############################### data import section ##################################
 # read the database with data frame existing test
@@ -69,9 +75,7 @@ my_all_data <- read.csv2("data/CV-IR_Tenon_Radiologie_detailed_data_export.csv",
 }
 toc()
 
-
-
-################################## data taylor section ##################################
+################################## data tayloring section ##################################
 # Collums of interest selection
 selection = c("Study.date..YYYY.MM.DD.", "Accession.number",
               "Patient.ID", "Patient.birthdate..YYYY.MM.DD.",
@@ -96,21 +100,6 @@ Study_data <- my_all_data[,selection]
 #  instance null vector with appropriate dimension to bind with Study_data
 age_patient <- rep(0, nrow(Study_data))
 
-# instance the today date in appropriate format
-#evt <- ymd_hms(now())
-
-#Loop without parallelization to calculate patient age in years and add this information to Study_data dataframe
-
-# tic("for loop without parallelization")
-# loop_lenght <- c(1:nrow(Study_data))
-# for (i in loop_lenght) {
-# naiss <- ymd_hms(Study_data[i,5])
-# age <- as.period(interval(naiss, evt))@year
-# age_patient[i] <- age
-# }
-# Study_data_age <-cbind(Study_data,age_patient)
-# toc()
-
 # Loop with parallelization to calculate patient age in years 
 # and add this information to Study_data dataframe
 # also have a condition to test global environement objet for debugging
@@ -132,9 +121,10 @@ toc()
 age_patient <- as.character(age_patient)
 Study_data_age <-cbind(Study_data,age_patient)
 
-#################### clinical indication selection #################
+############### clinical indication selection and data control #################
 
 Study_data_prostate <- subset(Study_data_age, Standard.study.description == "EMBOLISATION PROSTATIQUE")
+
 # patient number control
 patient_number <- length(unique(Study_data_prostate[,"Patient.ID"]))
 # patient ID control with Mathias list to verify if selectde patients are identical than matthias' list
@@ -146,17 +136,42 @@ patient_list <- as.array(unique(Study_data_prostate[,"Patient.ID"]))
 
 patient_number_verified <- length(intersect(patient_list, patient_list_matthias))
 
+patient_verified <- intersect(patient_list, patient_list_matthias)
+patient_comparison <- as.data.frame(patient_verified)
+
+# loop to harmonize nrow dimension for each column between patient_comparison and patient_list_matthias
+loop_end <- abs(nrow(patient_list_matthias) - nrow(patient_comparison))
+loop_lenght <- c(1:loop_end)
+for (i in loop_lenght) {
+    patient_comparison <- rbind(patient_comparison, c(0))
+}
+# add patient_list_matthias values to patient_comparison
+patient_comparison$patient_list_matthias <- patient_list_matthias
+
+# loop to harmonize nrow dimension for each column between patient_comparison and patient_list
+loop_end <- abs(nrow(patient_list) - nrow(patient_comparison))
+loop_lenght <- c(1:loop_end)
+for (i in loop_lenght) {
+  patient_comparison <- rbind(patient_comparison, c(0))
+}
+# add patient_list values to patient_comparison
+patient_comparison$patient_list <- patient_list
+# write excel file to verify by other user the collected data
+write.xlsx(patient_comparison, 'data/comparaison_liste_patient.xlsx', sheetName = "Comparaison_ID_patient", 
+           col.names = TRUE, row.names = TRUE, append = FALSE)
+
+
 # patient_list_cat %>%
 #   distinct(Patient.ID.Script, Patient.ID.Matthias, .keep_all = TRUE)
 # duplicated(patient_list_cat[,1:2])
-# write.csv(patient_list, "data/liste_de_patient.csv")
 
+
+############ test on CBCT acquisition #############################
 
 
 ################ DRL establishement section ########################
 
 # A faire :
-# faire des subset en fonction de la description clinique d'intérêt
 # faire un test pour chaque subset pour savoir si les valeurs de la colonne Irradiation.Event.Type comporte au moins une fois "ROTATIONAL_ACQUISITION" 
 # colonne avec facteurs à 4 niveaux
 # si oui => CBCT; sinon => pas de CBCT.
