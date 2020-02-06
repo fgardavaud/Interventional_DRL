@@ -160,18 +160,31 @@ patient_comparison$patient_list <- patient_list
 write.xlsx(patient_comparison, 'data/comparaison_liste_patient.xlsx', sheetName = "Comparaison_ID_patient", 
            col.names = TRUE, row.names = TRUE, append = FALSE)
 
-
 # patient_list_cat %>%
 #   distinct(Patient.ID.Script, Patient.ID.Matthias, .keep_all = TRUE)
 # duplicated(patient_list_cat[,1:2])
 
 
-############ test on CBCT acquisition #############################
+################ CBCT acquisition analysis #############################
+# Summary of acquisition type repartition between all examinations
+Acquisition_table <- table(Study_data_prostate$Patient.ID, Study_data_prostate$Irradiation.Event.Type)
+CBCT_position <- which(Study_data_prostate$Irradiation.Event.Type == "ROTATIONAL_ACQUISITION")
+
+# selection of sequences with CBCT
+Study_data_prostate_CBCT <- subset(Study_data_prostate, Irradiation.Event.Type == "ROTATIONAL_ACQUISITION")
+# count patient number with CBCT /!\ some patient could have multiple exams
+Study_data_prostate_CBCT <- data.frame(Study_data_prostate_CBCT$Patient.ID, Study_data_prostate_CBCT$Accession.number, Study_data_prostate_CBCT$Irradiation.Event.Type)
+Patient_number_CBCT <- length(unique(Study_data_prostate_CBCT[,"Study_data_prostate_CBCT.Patient.ID"]))
+
+# select only Patient ID and Irradiation event to table CBCT number per examination
+Exam_ID_list_CBCT <- table(Study_data_prostate_CBCT$Study_data_prostate_CBCT.Accession.number, droplevels(Study_data_prostate_CBCT$Study_data_prostate_CBCT.Irradiation.Event.Type))
+# PatientID_list_CBCT <- table(droplevels(Study_data_prostate_CBCT$Study_data_prostate_CBCT.Patient.ID), droplevels(Study_data_prostate_CBCT$Study_data_prostate_CBCT.Irradiation.Event.Type))
 
 
-################ DRL establishement section ########################
+
+################ TODO -LIST ########################
 
 # A faire :
-# faire un test pour chaque subset pour savoir si les valeurs de la colonne Irradiation.Event.Type comporte au moins une fois "ROTATIONAL_ACQUISITION" 
-# colonne avec facteurs à 4 niveaux
-# si oui => CBCT; sinon => pas de CBCT.
+# statistique sur CBCT
+# fréquence sur FOV
+# fréquence sur angle d'incidence
