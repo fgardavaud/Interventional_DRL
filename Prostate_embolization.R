@@ -187,12 +187,15 @@ colnames(Study_data_prostate_stat_unique) <- c("Accession.Number","Patient.ID", 
 Study_data_prostate_stat_unique <- Study_data_prostate_stat_unique[!duplicated(Study_data_prostate_stat_unique$Accession.Number), ] # to keep only one row per exam to perform global stats
 print("TNN12 is the codename in DW for non overexposure")
 print("TNN13 is the codename in DW for overexposure")
-Exam_number_global_stat <- lenght()
-# temp <- as.list.factor(Study_data_prostate_stat_unique[,7:8])
-# Study_data_prostate_stat_unique <- cbind()
-# global_stat_unique <- summary(as.numeric(Study_data_prostate_stat_unique))
+temp_DAP_fluoro <- as.data.frame(as.numeric(levels(Study_data_prostate_stat_unique[,8]))[Study_data_prostate_stat_unique[,8]]) # convert factor with level to a dataframe for statistics computation
+colnames(temp_DAP_fluoro) <- c("Total.Acquisition.DAP") # add colnames for labellization
+temp_DAP_graph <- as.data.frame(as.numeric(levels(Study_data_prostate_stat_unique[,9]))[Study_data_prostate_stat_unique[,9]]) # convert factor with level to a dataframe for statistics computation
+colnames(temp_DAP_graph) <- c("Total.Fluoro.DAP") # add colnames for labellization
+Study_data_prostate_stat_unique <- cbind(Study_data_prostate_stat_unique[,1:7], temp_DAP_fluoro, temp_DAP_graph, Study_data_prostate_stat_unique[,10:15]) # bind alll columns for summary
 
-# global stat for non unique value by exam
+Global_stat_unique_value <- summary(Study_data_prostate_stat_unique)
+
+## global stat for non unique value by exam
 
 
 ################ CBCT acquisition analysis #############################
