@@ -106,6 +106,20 @@ selection = c("Study.date..YYYY.MM.DD.", "Accession.number",
 # data filter to keep only interested collums for this study
 Study_data <- my_all_data[,selection]
 
+
+####### CBCT +/- and large display LD+/- labelization  ###########################
+
+CBCT_label <- cut(Study_data$Irradiation.Event.Type,c("FLUOROSCOPY","","STATIONARY_ACQUISITION", "STEPPING_ACQUISITION", "ROTATIONAL_ACQUISITION"),c("CBCT-","CBCT-","CBCT-","CBCT-", "CBCT+"))
+
+bmi_IP=cut(patient_IP$BMI,c(0,18.5,25,30,Inf),c("low","medium","high","obese"))
+
+# on converti les facteurs en caractères.
+bmi_IP=factor(as.character(bmi_IP),levels=c("medium","low","high","obese"))
+# on rajoute à l'object patient une nouvelle colonne "bmi"
+patient_IP$bmi=bmi_IP
+
+
+
 ######################## age patient computation #################################
 
 #  instance null vector with appropriate dimension to bind with Study_data
@@ -195,7 +209,12 @@ Study_data_prostate_stat_unique <- cbind(Study_data_prostate_stat_unique[,1:7], 
 
 Global_stat_unique_value <- summary(Study_data_prostate_stat_unique)
 
-## global stat for non unique value by exam
+## global stat for non unique value by exam : FOV and incidence angles
+
+Study_data_prostate_stat_multiple <- Study_data_prostate_stat[ ,20:22] # to select FOV and incidence angles columns
+FOV_ok_list <- which(Study_data_prostate_stat_multiple$Field.of.View..cm. > 0) # to keep only FOV > 0 as FOV value = 0 it's an DoseWatch export error
+Study_data_prostate_stat_multiple <- Study_data_prostate_stat_multiple[FOV_ok_list,] # to supress FOV bad value
+Global_stat_multiple_value <- summary(Study_data_prostate_stat_multiple)
 
 
 ################ CBCT acquisition analysis #############################
@@ -208,11 +227,13 @@ Study_data_prostate_CBCT <- subset(Study_data_prostate, Irradiation.Event.Type =
 # count patient number with CBCT /!\ some patient could have multiple exams
 Study_data_prostate_CBCT <- data.frame(Study_data_prostate_CBCT$Patient.ID, Study_data_prostate_CBCT$Accession.number, Study_data_prostate_CBCT$Irradiation.Event.Type, Study_data_prostate_CBCT$Proprietary.Type)
 Patient_number_CBCT <- length(unique(Study_data_prostate_CBCT[,"Study_data_prostate_CBCT.Patient.ID"]))
-
+Patient_number_wo_CBCT <- length(unique(Study_data_prostate[,"Patient.ID"])) - Patient_number_CBCT
 # select only Patient ID and Irradiation event to table CBCT number per examination
 Exam_ID_list_CBCT <- table(Study_data_prostate_CBCT$Study_data_prostate_CBCT.Accession.number, droplevels(Study_data_prostate_CBCT$Study_data_prostate_CBCT.Irradiation.Event.Type))
 # statistical analysis on CBCT acquisition
+
 CBCT_stat <- describe(Exam_ID_list_CBCT, num.desc=c("mean","median","sd","min","max","valid.n"))
+
 #CBCT_mean <- mean(Exam_ID_list_CBCT)
 ### graphic to illustrate CBCT acquisition repartition
 # lbls <- Study_data_prostate_CBCT$Study_data_prostate_CBCT.Accession.number # create label = accession number
@@ -261,6 +282,12 @@ dev.print(device = png, file = "output/FOV_distribution.png", width = 600, heigh
 ################ TODO -LIST ########################
 
 # A faire :
-# fréquence sur angle d'incidence
-
-
+# labeliser les données entre large display +/-
+# labeliser les données entre CBCT +/-
+# FOV distribution CBCT+/- et LD +/-
+# table de fréquence CBCT+/- ~ FOV; LD+/- ~ FOV
+# summary CBCT +/- ; LD +/-
+# t.student CBCT +/- ; LD +/-
+# wilcoxon CBCT +/- ; LD +/-
+# PCA CBCT +/- ~ dose pic ; LD +/- ~ dose pic
+# TSNE CBCT +/- ~ dose pic ; LD +/- ~ dose pic
