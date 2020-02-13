@@ -109,14 +109,14 @@ Study_data <- my_all_data[,selection]
 
 ####### CBCT +/- and large display LD+/- labelization  ###########################
 
-CBCT_label <- cut(Study_data$Irradiation.Event.Type,c("FLUOROSCOPY","","STATIONARY_ACQUISITION", "STEPPING_ACQUISITION", "ROTATIONAL_ACQUISITION"),c("CBCT-","CBCT-","CBCT-","CBCT-", "CBCT+"))
-
-bmi_IP=cut(patient_IP$BMI,c(0,18.5,25,30,Inf),c("low","medium","high","obese"))
-
-# on converti les facteurs en caractères.
-bmi_IP=factor(as.character(bmi_IP),levels=c("medium","low","high","obese"))
-# on rajoute à l'object patient une nouvelle colonne "bmi"
-patient_IP$bmi=bmi_IP
+# CBCT_label <- (Study_data$Irradiation.Event.Type,c("FLUOROSCOPY","","STATIONARY_ACQUISITION", "STEPPING_ACQUISITION", "ROTATIONAL_ACQUISITION"),c("CBCT-","CBCT-","CBCT-","CBCT-", "CBCT+"))
+# 
+# bmi_IP=cut(patient_IP$BMI,c(0,18.5,25,30,Inf),c("low","medium","high","obese"))
+# 
+# # on converti les facteurs en caractères.
+# bmi_IP=factor(as.character(bmi_IP),levels=c("medium","low","high","obese"))
+# # on rajoute à l'object patient une nouvelle colonne "bmi"
+# patient_IP$bmi=bmi_IP
 
 
 
