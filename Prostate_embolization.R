@@ -109,14 +109,23 @@ Study_data <- my_all_data[,selection]
 
 ####### CBCT +/- and large display LD+/- labelization  ###########################
 
-# CBCT_label <- (Study_data$Irradiation.Event.Type,c("FLUOROSCOPY","","STATIONARY_ACQUISITION", "STEPPING_ACQUISITION", "ROTATIONAL_ACQUISITION"),c("CBCT-","CBCT-","CBCT-","CBCT-", "CBCT+"))
-# 
-# bmi_IP=cut(patient_IP$BMI,c(0,18.5,25,30,Inf),c("low","medium","high","obese"))
-# 
-# # on converti les facteurs en caractères.
-# bmi_IP=factor(as.character(bmi_IP),levels=c("medium","low","high","obese"))
-# # on rajoute à l'object patient une nouvelle colonne "bmi"
-# patient_IP$bmi=bmi_IP
+#  add new levels for Irradiation.Event.Type as CBCT+/-
+levels(Study_data$Irradiation.Event.Type) <- c(levels(Study_data$Irradiation.Event.Type), "CBCT+","CBCT-")
+# rename factors for none CBCT acqusition
+Study_data$Irradiation.Event.Type[Study_data$Irradiation.Event.Type == 'FLUOROSCOPY'] <- 'CBCT-'
+Study_data$Irradiation.Event.Type[Study_data$Irradiation.Event.Type == 'STATIONARY_ACQUISITION'] <- 'CBCT-'
+Study_data$Irradiation.Event.Type[Study_data$Irradiation.Event.Type == 'STEPPING_ACQUISITION'] <- 'CBCT-'
+# rename factor for CBCT acqusition
+Study_data$Irradiation.Event.Type[Study_data$Irradiation.Event.Type == 'ROTATIONAL_ACQUISITION'] <- 'CBCT+'
+
+#  create new levels as LD+/-
+print("Large display have been installed since 2019-06-27")
+LD <- Study_data$Study.date..YYYY.MM.DD.
+LD <- gsub("[: -]", "" , LD, perl=TRUE) # delete ":" , " ", and "-" from the date value
+LD <- as.numeric(LD) # convert LD in numeric format to apply cut function
+LD <- cut(LD,c(20180101,20190627, 20200211),c("LD-","LD+")) # cut to segemnt date between LD+ and LD- 
+LD <- factor(as.character(LD),levels=c("LD-","LD+")) # convert factor in character
+Study_data$LD <- LD # add LD factor to the data frame
 
 
 
@@ -220,10 +229,10 @@ Global_stat_multiple_value <- summary(Study_data_prostate_stat_multiple)
 ################ CBCT acquisition analysis #############################
 # Summary of acquisition type repartition between all examinations
 Acquisition_table <- table(Study_data_prostate$Patient.ID, Study_data_prostate$Irradiation.Event.Type)
-CBCT_position <- which(Study_data_prostate$Irradiation.Event.Type == "ROTATIONAL_ACQUISITION")
+CBCT_position <- which(Study_data_prostate$Irradiation.Event.Type == "CBCT+")
 
 # selection of sequences with CBCT
-Study_data_prostate_CBCT <- subset(Study_data_prostate, Irradiation.Event.Type == "ROTATIONAL_ACQUISITION")
+Study_data_prostate_CBCT <- subset(Study_data_prostate, Irradiation.Event.Type == "CBCT+")
 # count patient number with CBCT /!\ some patient could have multiple exams
 Study_data_prostate_CBCT <- data.frame(Study_data_prostate_CBCT$Patient.ID, Study_data_prostate_CBCT$Accession.number, Study_data_prostate_CBCT$Irradiation.Event.Type, Study_data_prostate_CBCT$Proprietary.Type)
 Patient_number_CBCT <- length(unique(Study_data_prostate_CBCT[,"Study_data_prostate_CBCT.Patient.ID"]))
