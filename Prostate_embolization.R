@@ -6,7 +6,7 @@
 ######################################################################
 
 # created by François Gardavaud
-# date : 02/10/2020
+# date : 02/14/2020
 
 ###################### set-up section ################################
 
@@ -199,7 +199,15 @@ write.xlsx(patient_comparison, 'data/comparaison_liste_patient.xlsx', sheetName 
 #   distinct(Patient.ID.Script, Patient.ID.Matthias, .keep_all = TRUE)
 # duplicated(patient_list_cat[,1:2])
 
-############### global statistical analysis #################
+##########################################################################
+##########################################################################
+##########################################################################
+################ global statistical analysis #############################
+##########################################################################
+##########################################################################
+##########################################################################
+
+############### main statistical analysis #################
 # global stat for unique value by exam
 Study_data_prostate_stat <- cbind(Study_data_prostate[,2:3],Study_data_prostate[,5:7], Study_data_prostate[,10:26], as.numeric(Study_data_prostate[,27])) # to select row of interest for statistical computing
 Study_data_prostate_stat_unique <- cbind(Study_data_prostate_stat[,1:14], Study_data_prostate_stat[,23]) # to select column with unique value per exam
@@ -286,15 +294,80 @@ lbls <- paste(lbls," %",sep="") # ad % to labels
 pie(tail(FOV_tab_total,1), labels = lbls, cex =0.9, main = "FOV distribution in all examinations")
 dev.print(device = png, file = "output/FOV_distribution.png", width = 600, height = 400)
 
+##########################################################################
+##########################################################################
+##########################################################################
+################ CBCT+/- and LD +/- analysis #############################
+##########################################################################
+##########################################################################
+##########################################################################
+
+################ FOV distribution CBCT+/- #############################
+
+FOV_CBCT_table <- table(droplevels(Study_data_prostate$Irradiation.Event.Type), Study_data_prostate$Field.of.View..cm.)
+FOV_CBCT_table <- FOV_CBCT_table[,2:5] # supress FOV = 0 cm column as it's an error of DoseWatch export
+FOV_CBCT_table_pourcent <- round(prop.table(FOV_CBCT_table, margin = 1)*100) # table in purcent for each examn
+
+
+FOV_tab_CBCT_total <- round(prop.table(addmargins(FOV_CBCT_table,1),1)*100,1)  # FOV frequencies in purcent by patient plus total frequency
+# FOV_tab_total <- cbind(addmargins(prop.table(addmargins(FOV_table,1),1),2), c(margin.table(FOV_table,1),sum(FOV_table)))
+# colnames(FOV_tab_total)<-c(colnames(FOV_table),"TOTAL","EFFECTIF") 
+
+
+# ### graphic to illustrate FOV distribution in all examinations
+#
+lbls <- colnames(FOV_tab_CBCT_total) # create label = FOV size
+lbls <- paste(lbls, "cm") # add cm
+pct_CBCT_total <- round(tail(FOV_tab_CBCT_total,1)/sum(tail(FOV_tab_CBCT_total,1))*100) # generate pourcent of total FOV size
+pct_CBCT_plus <- round(head(FOV_tab_CBCT_total,1)/sum(head(FOV_tab_CBCT_total,1))*100) # generate pourcent of total FOV size
+pct_CBCT_minus <- round(FOV_tab_CBCT_total[2,]/sum(FOV_tab_CBCT_total[2,])*100) # generate pourcent of total FOV size
+lbls_total <- paste(lbls, pct_CBCT_total, sep = ", \n") # add percents to labels
+lbls_total <- paste(lbls_total," %",sep="") # ad % to labels 
+pie(tail(FOV_tab_CBCT_total,1), labels = lbls_total, cex =0.9, main = "FOV distribution with or without CBCT acquisitions")
+dev.print(device = png, file = "output/FOV_CBCT_distribution.png", width = 600, height = 400)
+lbls_plus <- paste(lbls, pct_CBCT_plus, sep = ", \n") # add percents to labels
+lbls_plus <- paste(lbls_plus," %",sep="") # ad % to labels 
+pie(head(FOV_tab_CBCT_total,1), labels = lbls_plus, cex =0.9, main = "FOV distribution with CBCT acquisitions")
+dev.print(device = png, file = "output/FOV_CBCTplus_distribution.png", width = 600, height = 400)
+lbls_minus <- paste(lbls, pct_CBCT_minus, sep = ", \n") # add percents to labels
+lbls_minus <- paste(lbls_minus," %",sep="") # ad % to labels 
+pie(FOV_tab_CBCT_total[2,], labels = lbls_minus, cex =0.9, main = "FOV distribution without CBCT acquisitions")
+dev.print(device = png, file = "output/FOV_CBCTminus_distribution.png", width = 600, height = 400)
+
+
+################ FOV distribution LD+/- #############################
+
+FOV_LD_table <- table(droplevels(Study_data_prostate$LD), Study_data_prostate$Field.of.View..cm.)
+FOV_LD_table <- FOV_LD_table[,2:5] # supress FOV = 0 cm column as it's an error of DoseWatch export
+FOV_LD_table_pourcent <- round(prop.table(FOV_LD_table, margin = 1)*100) # table in purcent for each examn
+
+FOV_tab_LD_total <- round(prop.table(addmargins(FOV_LD_table,1),1)*100,1)  # FOV frequencies in purcent by patient plus total frequency
+
+# ### graphic to illustrate FOV distribution in all examinations
+#
+lbls <- colnames(FOV_tab_LD_total) # create label = FOV size
+lbls <- paste(lbls, "cm") # add cm
+pct_LD_total <- round(tail(FOV_tab_LD_total,1)/sum(tail(FOV_tab_LD_total,1))*100) # generate pourcent of total FOV size
+pct_LD_plus <- round(FOV_tab_LD_total[2,]/sum(FOV_tab_LD_total[2,])*100) # generate pourcent of total FOV size
+pct_LD_minus <- round(head(FOV_tab_LD_total,1)/sum(head(FOV_tab_LD_total,1))*100) # generate pourcent of total FOV size
+lbls_total <- paste(lbls, pct_LD_total, sep = ", \n") # add percents to labels
+lbls_total <- paste(lbls_total," %",sep="") # ad % to labels 
+pie(tail(FOV_tab_LD_total,1), labels = lbls_total, cex =0.9, main = "FOV distribution with all displays configurations")
+dev.print(device = png, file = "output/FOV_LD_distribution.png", width = 600, height = 400)
+lbls_plus <- paste(lbls, pct_LD_plus, sep = ", \n") # add percents to labels
+lbls_plus <- paste(lbls_plus," %",sep="") # ad % to labels 
+pie(FOV_tab_LD_total[2,], labels = lbls_plus, cex =0.9, main = "FOV distribution with LD configuration")
+dev.print(device = png, file = "output/FOV_LDminus_distribution.png", width = 600, height = 400)
+lbls_minus <- paste(lbls, pct_LD_minus, sep = ", \n") # add percents to labels
+lbls_minus <- paste(lbls_minus," %",sep="") # ad % to labels
+pie(head(FOV_tab_LD_total,1), labels = lbls_minus, cex =0.9, main = "FOV distribution without LD configuration")
+dev.print(device = png, file = "output/FOV_LDminus_distribution.png", width = 600, height = 400)
+
 
 
 ################ TODO -LIST ########################
 
 # A faire :
-# labeliser les données entre large display +/-
-# labeliser les données entre CBCT +/-
-# FOV distribution CBCT+/- et LD +/-
-# table de fréquence CBCT+/- ~ FOV; LD+/- ~ FOV
 # summary CBCT +/- ; LD +/-
 # t.student CBCT +/- ; LD +/-
 # wilcoxon CBCT +/- ; LD +/-
