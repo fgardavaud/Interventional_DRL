@@ -6,7 +6,7 @@
 ######################################################################
 
 # created by François Gardavaud
-# date : 02/14/2020
+# date : 02/17/2020
 
 ###################### set-up section ################################
 
@@ -50,11 +50,11 @@ if(!require(openxlsx)){
   install.packages("openxlsx")
   library(openxlsx)
 }
-# load tidyverse if necessary for data handling
-# if(!require(tidyverse)){
-#   install.packages("tidyverse")
-#   library(tidyverse)
-# }
+# load dplyr for data handling
+if(!require(dplyr)){
+  install.packages("dplyr")
+  library(dplyr)
+}
 # load prettyR package for better statistical analysis
 if(!require(prettyR)){
   install.packages("prettyR")
@@ -82,7 +82,7 @@ tic("to import detailled data in Rstudio")
 if(exists("my_all_data")){
   print("raw data importation have already done")
 }else{
-my_all_data <- read.csv2("data/CV-IR_Tenon_Radiologie_detailed_data_export.csv", sep = ";")
+  my_all_data <- read.csv2("data/CV-IR_Tenon_Radiologie_detailed_data_export.csv", sep = ";")
 }
 toc()
 
@@ -141,14 +141,14 @@ tic("for loop with parallelization")
 if(exists("Study_data_age")){
   print("patient age computation have already done")
 }else{
-cores <- detectCores()
-registerDoMC(cores - 1)
-age_patient <- foreach(i = 1:nrow(Study_data)) %dopar% {
-  naiss = ymd_hms(Study_data[i,4])
-  evt = as.POSIXct(Study_data[i,1])
-  age = as.period(interval(naiss, evt))@year
-  age_patient <- age
-}
+  cores <- detectCores()
+  registerDoMC(cores - 1)
+  age_patient <- foreach(i = 1:nrow(Study_data)) %dopar% {
+    naiss = ymd_hms(Study_data[i,4])
+    evt = as.POSIXct(Study_data[i,1])
+    age = as.period(interval(naiss, evt))@year
+    age_patient <- age
+  }
 }
 toc()
 
@@ -178,7 +178,7 @@ patient_comparison <- as.data.frame(patient_verified)
 loop_end <- abs(nrow(patient_list_matthias) - nrow(patient_comparison))
 loop_lenght <- c(1:loop_end)
 for (i in loop_lenght) {
-    patient_comparison <- rbind(patient_comparison, c(0))
+  patient_comparison <- rbind(patient_comparison, c(0))
 }
 # add patient_list_matthias values to patient_comparison
 patient_comparison$patient_list_matthias <- patient_list_matthias
@@ -212,15 +212,15 @@ write.xlsx(patient_comparison, 'data/comparaison_liste_patient.xlsx', sheetName 
 Study_data_prostate_stat <- cbind(Study_data_prostate[,2:3],Study_data_prostate[,5:7], Study_data_prostate[,10:26], as.numeric(Study_data_prostate[,27])) # to select row of interest for statistical computing
 Study_data_prostate_stat_unique <- cbind(Study_data_prostate_stat[,1:14], Study_data_prostate_stat[,23]) # to select column with unique value per exam
 colnames(Study_data_prostate_stat_unique) <- c("Accession.Number","Patient.ID", "Patient_weight", "Patient.size", "BMI", "Peak.Skin.Dose",
-                                                    "Image.and.Fluoroscopy.DAP", "Total.Acquisition.DAP", "Total.Fluoro.DAP",
-                                                   "Total.Air.Kerma", "Total.Acquisition.Air.Kerma", "Total.Fluoro.Air.Kerma",
-                                                   "Total.Time.of.Fluoroscopy", "Number.of.Acquisition.Series", "Patient.Age")
+                                               "Image.and.Fluoroscopy.DAP", "Total.Acquisition.DAP", "Total.Fluoro.DAP",
+                                               "Total.Air.Kerma", "Total.Acquisition.Air.Kerma", "Total.Fluoro.Air.Kerma",
+                                               "Total.Time.of.Fluoroscopy", "Number.of.Acquisition.Series", "Patient.Age")
 Study_data_prostate_stat_unique <- Study_data_prostate_stat_unique[!duplicated(Study_data_prostate_stat_unique$Accession.Number), ] # to keep only one row per exam to perform global stats
 print("TNN12 is the codename in DW for non overexposure")
 print("TNN13 is the codename in DW for overexposure")
-temp_DAP_fluoro <- as.data.frame(as.numeric(levels(Study_data_prostate_stat_unique[,8]))[Study_data_prostate_stat_unique[,8]]) # convert factor with level to a dataframe for statistics computation
+temp_DAP_fluoro <- as.data.frame(as.numeric(levels(Study_data_prostate_stat_unique[,8]))[Study_data_prostate_stat_unique[,8]]) # convert factor with level to a dataframe with numeric value
 colnames(temp_DAP_fluoro) <- c("Total.Acquisition.DAP") # add colnames for labellization
-temp_DAP_graph <- as.data.frame(as.numeric(levels(Study_data_prostate_stat_unique[,9]))[Study_data_prostate_stat_unique[,9]]) # convert factor with level to a dataframe for statistics computation
+temp_DAP_graph <- as.data.frame(as.numeric(levels(Study_data_prostate_stat_unique[,9]))[Study_data_prostate_stat_unique[,9]]) # convert factor with level to a dataframe with numeric value
 colnames(temp_DAP_graph) <- c("Total.Fluoro.DAP") # add colnames for labellization
 Study_data_prostate_stat_unique <- cbind(Study_data_prostate_stat_unique[,1:7], temp_DAP_fluoro, temp_DAP_graph, Study_data_prostate_stat_unique[,10:15]) # bind alll columns for summary
 
@@ -364,6 +364,56 @@ pie(head(FOV_tab_LD_total,1), labels = lbls_minus, cex =0.9, main = "FOV distrib
 dev.print(device = png, file = "output/FOV_LDminus_distribution.png", width = 600, height = 400)
 
 
+##########################################################################
+##########################################################################
+##########################################################################
+################  statistical analysis by group ##########################
+##########################################################################
+##########################################################################
+##########################################################################
+
+################ CBCT+/- analysis #############################
+
+# global stat part
+global_data_prostate <- Study_data_prostate %>% select(Accession.number, Patient.weight..kg., Patient.size..cm., BMI, Peak.Skin.Dose..mGy.,
+                                                       Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., Total.Acquisition.DAP..mGy.cm..,
+                                                       Total.Fluoro.DAP..mGy.cm.., Total.Air.Kerma..mGy., Total.Acquisition.Air.Kerma..mGy.,
+                                                       Total.Fluoro.Air.Kerma..mGy., Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                                       Irradiation.Event.Type, Positioner.Primary.Angle..deg., Positioner.Secondary.Angle..deg.,
+                                                       Field.of.View..cm., LD, age_patient) # to select column of interest and keeping the column's name
+
+Data_prostate_CBCT_plus <- subset(global_data_prostate, global_data_prostate$Irradiation.Event.Type == "CBCT+") # select only rows with CBCT
+global_data_prostate_CBCT_plus <- Data_prostate_CBCT_plus[!duplicated(Data_prostate_CBCT_plus$Accession.number), ] # to keep only one row per exam to perform global stats
+temp_DAP_fluoro_plus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_plus[,8]))[global_data_prostate_CBCT_plus[,8]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_DAP_fluoro_plus) <- c("Total.Acquisition.DAP") # add colnames for labellization
+temp_DAP_graph_plus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_plus[,7]))[global_data_prostate_CBCT_plus[,7]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_DAP_graph_plus) <- c("Total.Fluoro.DAP") # add colnames for labellization
+temp_Patient_age_plus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_plus[,19]))[global_data_prostate_CBCT_plus[,19]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_Patient_age_plus) <- c("Patient.age") # add colnames for labellization
+global_data_prostate_CBCT_plus_unique <- global_data_prostate_CBCT_plus %>% select(Patient.weight..kg., Patient.size..cm., BMI, Peak.Skin.Dose..mGy.,
+                                                                                   Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., Total.Air.Kerma..mGy., Total.Acquisition.Air.Kerma..mGy.,
+                                                                                   Total.Fluoro.Air.Kerma..mGy., Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                                                                   Irradiation.Event.Type, Field.of.View..cm., LD) # to keep only right columns
+global_data_prostate_CBCT_plus_unique <- cbind(global_data_prostate_CBCT_plus_unique, temp_DAP_fluoro_plus, temp_DAP_graph_plus, temp_Patient_age_plus) # bind all columns for summary
+Stat_CBCT_plus_unique <- summary(global_data_prostate_CBCT_plus_unique)
+
+Data_prostate_CBCT_minus <- subset(global_data_prostate, global_data_prostate$Irradiation.Event.Type == "CBCT-") # select only rows without CBCT
+global_data_prostate_CBCT_minus <- Data_prostate_CBCT_minus[!duplicated(Data_prostate_CBCT_minus$Accession.number), ] # to keep only one row per exam to perform global stats
+temp_DAP_fluoro_minus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_minus[,8]))[global_data_prostate_CBCT_minus[,8]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_DAP_fluoro_minus) <- c("Total.Acquisition.DAP") # add colnames for labellization
+temp_DAP_graph_minus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_minus[,7]))[global_data_prostate_CBCT_minus[,7]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_DAP_graph_minus) <- c("Total.Fluoro.DAP") # add colnames for labellization
+temp_Patient_age_minus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_minus[,19]))[global_data_prostate_CBCT_minus[,19]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_Patient_age_minus) <- c("Patient.age") # add colnames for labellization
+global_data_prostate_CBCT_minus_unique <- global_data_prostate_CBCT_minus %>% select(Patient.weight..kg., Patient.size..cm., BMI, Peak.Skin.Dose..mGy.,
+                                                                                   Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., Total.Air.Kerma..mGy., Total.Acquisition.Air.Kerma..mGy.,
+                                                                                   Total.Fluoro.Air.Kerma..mGy., Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                                                                   Irradiation.Event.Type, Field.of.View..cm., LD) # to keep only right columns
+global_data_prostate_CBCT_minus_unique <- cbind(global_data_prostate_CBCT_minus_unique, temp_DAP_fluoro_minus, temp_DAP_graph_minus, temp_Patient_age_minus) # bind all columns for summary
+Stat_CBCT_minus_unique <- summary(global_data_prostate_CBCT_minus_unique)
+
+
+# stat for non unique value (e.g FOV, incidence angle) part
 
 ################ TODO -LIST ########################
 
