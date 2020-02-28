@@ -385,9 +385,9 @@ global_data_prostate <- Study_data_prostate %>% select(Accession.number, Patient
 Data_prostate_CBCT_plus <- subset(global_data_prostate, global_data_prostate$Irradiation.Event.Type == "CBCT+") # select only rows with CBCT
 global_data_prostate_CBCT_plus <- Data_prostate_CBCT_plus[!duplicated(Data_prostate_CBCT_plus$Accession.number), ] # to keep only one row per exam to perform global stats
 temp_DAP_fluoro_plus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_plus[,8]))[global_data_prostate_CBCT_plus[,8]]) # convert factor with level to a dataframe with numeric value
-colnames(temp_DAP_fluoro_plus) <- c("Total.Acquisition.DAP") # add colnames for labellization
+colnames(temp_DAP_fluoro_plus) <- c("Total.Fluoro.DAP") # add colnames for labellization
 temp_DAP_graph_plus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_plus[,7]))[global_data_prostate_CBCT_plus[,7]]) # convert factor with level to a dataframe with numeric value
-colnames(temp_DAP_graph_plus) <- c("Total.Fluoro.DAP") # add colnames for labellization
+colnames(temp_DAP_graph_plus) <- c("Total.Acquisition.DAP") # add colnames for labellization
 temp_Patient_age_plus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_plus[,19]))[global_data_prostate_CBCT_plus[,19]]) # convert factor with level to a dataframe with numeric value
 colnames(temp_Patient_age_plus) <- c("Patient.age") # add colnames for labellization
 global_data_prostate_CBCT_plus_unique <- global_data_prostate_CBCT_plus %>% select(Patient.weight..kg., Patient.size..cm., BMI, Peak.Skin.Dose..mGy.,
@@ -400,26 +400,97 @@ Stat_CBCT_plus_unique <- summary(global_data_prostate_CBCT_plus_unique)
 Data_prostate_CBCT_minus <- subset(global_data_prostate, global_data_prostate$Irradiation.Event.Type == "CBCT-") # select only rows without CBCT
 global_data_prostate_CBCT_minus <- Data_prostate_CBCT_minus[!duplicated(Data_prostate_CBCT_minus$Accession.number), ] # to keep only one row per exam to perform global stats
 temp_DAP_fluoro_minus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_minus[,8]))[global_data_prostate_CBCT_minus[,8]]) # convert factor with level to a dataframe with numeric value
-colnames(temp_DAP_fluoro_minus) <- c("Total.Acquisition.DAP") # add colnames for labellization
+colnames(temp_DAP_fluoro_minus) <- c("Total.Fluoro.DAP") # add colnames for labellization
 temp_DAP_graph_minus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_minus[,7]))[global_data_prostate_CBCT_minus[,7]]) # convert factor with level to a dataframe with numeric value
-colnames(temp_DAP_graph_minus) <- c("Total.Fluoro.DAP") # add colnames for labellization
+colnames(temp_DAP_graph_minus) <- c("Total.Acquisition.DAP") # add colnames for labellization
 temp_Patient_age_minus <- as.data.frame(as.numeric(levels(global_data_prostate_CBCT_minus[,19]))[global_data_prostate_CBCT_minus[,19]]) # convert factor with level to a dataframe with numeric value
 colnames(temp_Patient_age_minus) <- c("Patient.age") # add colnames for labellization
 global_data_prostate_CBCT_minus_unique <- global_data_prostate_CBCT_minus %>% select(Patient.weight..kg., Patient.size..cm., BMI, Peak.Skin.Dose..mGy.,
-                                                                                   Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., Total.Air.Kerma..mGy., Total.Acquisition.Air.Kerma..mGy.,
-                                                                                   Total.Fluoro.Air.Kerma..mGy., Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
-                                                                                   Irradiation.Event.Type, Field.of.View..cm., LD) # to keep only right columns
+                                                                                     Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., Total.Air.Kerma..mGy., Total.Acquisition.Air.Kerma..mGy.,
+                                                                                     Total.Fluoro.Air.Kerma..mGy., Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                                                                     Irradiation.Event.Type, Field.of.View..cm., LD) # to keep only right columns
 global_data_prostate_CBCT_minus_unique <- cbind(global_data_prostate_CBCT_minus_unique, temp_DAP_fluoro_minus, temp_DAP_graph_minus, temp_Patient_age_minus) # bind all columns for summary
 Stat_CBCT_minus_unique <- summary(global_data_prostate_CBCT_minus_unique)
 
+# Anova_CBCT_minus_unique <- anova(global_data_prostate_CBCT_minus_unique)
+# stat for non unique value (e.g FOV, incidence angle) part
+
+FOV_angle_data_prostate <- Study_data_prostate %>% select(Irradiation.Event.Type, Positioner.Primary.Angle..deg., Positioner.Secondary.Angle..deg.,
+                                                     Field.of.View..cm., LD) # to select column of interest and keeping the column's name
+
+FOV_angle_prostate_CBCT_plus <- subset(FOV_angle_data_prostate, FOV_angle_data_prostate$Irradiation.Event.Ty == "CBCT+") # select only rows with CBCT
+Stat_CBCT_plus_FOV_angle <- summary(FOV_angle_prostate_CBCT_plus)
+
+FOV_angle_prostate_CBCT_minus <- subset(FOV_angle_data_prostate, FOV_angle_data_prostate$Irradiation.Event.Ty == "CBCT-") # select only rows without CBCT
+Stat_CBCT_minus_FOV_angle <- summary(FOV_angle_prostate_CBCT_minus)
+
+# Anova_CBCT_minus_FOV_angle <- anova(FOV_angle_prostate_CBCT_minus)
+# t.test(IP_dose_colon$Colon[IP_dose_colon$Logiciel == "CT-Expo"], IP_dose_colon$Colon[IP_dose_colon$Logiciel == "Duke Organ Dose"], paired=FALSE)
+# wilcox.test(x, y, paired = TRUE)
+
+### Boite à moustache dose absorbée suivant logiciel
+# ggplot(file_ip_4logiciels) + geom_boxplot(aes(x=Logiciel, y=Colon, fill=Logiciel)) + theme(plot.title = element_text(hjust = 0.5))+labs(title="Répartition de la dose absorbée au Côlon (en mGy)\n en fonction des logiciels de calculs de dose", x= "", y ="Dose absorbee (mGy)", size=10)
+# dev.print(device = png, file = "output/ggplot/bam/IP_total/BAM_IP_total_Colon.png", width = 600, height = 400)
+
+################ LD+/- analysis #############################
+
+# global stat part
+global_data_prostate <- Study_data_prostate %>% select(Accession.number, Patient.weight..kg., Patient.size..cm., BMI, Peak.Skin.Dose..mGy.,
+                                                       Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., Total.Acquisition.DAP..mGy.cm..,
+                                                       Total.Fluoro.DAP..mGy.cm.., Total.Air.Kerma..mGy., Total.Acquisition.Air.Kerma..mGy.,
+                                                       Total.Fluoro.Air.Kerma..mGy., Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                                       Irradiation.Event.Type, Positioner.Primary.Angle..deg., Positioner.Secondary.Angle..deg.,
+                                                       Field.of.View..cm., LD, age_patient) # to select column of interest and keeping the column's name
+
+Data_prostate_LD_plus <- subset(global_data_prostate, global_data_prostate$LD == "LD+") # select only rows with Large Display (LD)
+global_data_prostate_LD_plus <- Data_prostate_LD_plus[!duplicated(Data_prostate_LD_plus$Accession.number), ] # to keep only one row per exam to perform global stats
+temp_DAP_fluoro_plus <- as.data.frame(as.numeric(levels(global_data_prostate_LD_plus[,8]))[global_data_prostate_LD_plus[,8]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_DAP_fluoro_plus) <- c("Total.Fluoro.DAP") # add colnames for labellization
+temp_DAP_graph_plus <- as.data.frame(as.numeric(levels(global_data_prostate_LD_plus[,7]))[global_data_prostate_LD_plus[,7]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_DAP_graph_plus) <- c("Total.Acquisition.DAP") # add colnames for labellization
+temp_Patient_age_plus <- as.data.frame(as.numeric(levels(global_data_prostate_LD_plus[,19]))[global_data_prostate_LD_plus[,19]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_Patient_age_plus) <- c("Patient.age") # add colnames for labellization
+global_data_prostate_LD_plus_unique <- global_data_prostate_LD_plus %>% select(Patient.weight..kg., Patient.size..cm., BMI, Peak.Skin.Dose..mGy.,
+                                                                                   Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., Total.Air.Kerma..mGy., Total.Acquisition.Air.Kerma..mGy.,
+                                                                                   Total.Fluoro.Air.Kerma..mGy., Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                                                                   Irradiation.Event.Type, Field.of.View..cm., LD) # to keep only right columns
+global_data_prostate_LD_plus_unique <- cbind(global_data_prostate_LD_plus_unique, temp_DAP_fluoro_plus, temp_DAP_graph_plus, temp_Patient_age_plus) # bind all columns for summary
+Stat_LD_plus_unique <- summary(global_data_prostate_LD_plus_unique)
+
+Data_prostate_LD_minus <- subset(global_data_prostate, global_data_prostate$LD == "LD-") # select only rows without Large Display (LD)
+global_data_prostate_LD_minus <- Data_prostate_LD_minus[!duplicated(Data_prostate_LD_minus$Accession.number), ] # to keep only one row per exam to perform global stats
+temp_DAP_fluoro_minus <- as.data.frame(as.numeric(levels(global_data_prostate_LD_minus[,8]))[global_data_prostate_LD_minus[,8]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_DAP_fluoro_minus) <- c("Total.Fluoro.DAP") # add colnames for labellization
+temp_DAP_graph_minus <- as.data.frame(as.numeric(levels(global_data_prostate_LD_minus[,7]))[global_data_prostate_LD_minus[,7]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_DAP_graph_minus) <- c("Total.Acquisition.DAP") # add colnames for labellization
+temp_Patient_age_minus <- as.data.frame(as.numeric(levels(global_data_prostate_LD_minus[,19]))[global_data_prostate_LD_minus[,19]]) # convert factor with level to a dataframe with numeric value
+colnames(temp_Patient_age_minus) <- c("Patient.age") # add colnames for labellization
+global_data_prostate_LD_minus_unique <- global_data_prostate_LD_minus %>% select(Patient.weight..kg., Patient.size..cm., BMI, Peak.Skin.Dose..mGy.,
+                                                                                     Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., Total.Air.Kerma..mGy., Total.Acquisition.Air.Kerma..mGy.,
+                                                                                     Total.Fluoro.Air.Kerma..mGy., Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                                                                     Irradiation.Event.Type, Field.of.View..cm., LD) # to keep only right columns
+global_data_prostate_LD_minus_unique <- cbind(global_data_prostate_LD_minus_unique, temp_DAP_fluoro_minus, temp_DAP_graph_minus, temp_Patient_age_minus) # bind all columns for summary
+Stat_LD_minus_unique <- summary(global_data_prostate_LD_minus_unique)
+# Anova_LD_minus_unique <- anova(global_data_prostate_LD_minus_unique)
 
 # stat for non unique value (e.g FOV, incidence angle) part
+
+FOV_angle_data_prostate <- Study_data_prostate %>% select(Irradiation.Event.Type, Positioner.Primary.Angle..deg., Positioner.Secondary.Angle..deg.,
+                                                          Field.of.View..cm., LD) # to select column of interest and keeping the column's name
+
+FOV_angle_prostate_LD_plus <- subset(FOV_angle_data_prostate, FOV_angle_data_prostate$LD == "LD+") # select only rows with Large Display (LD)
+Stat_LD_plus_FOV_angle <- summary(FOV_angle_prostate_LD_plus)
+
+FOV_angle_prostate_LD_minus <- subset(FOV_angle_data_prostate, FOV_angle_data_prostate$LD == "LD-") # select only rows without Large Display (LD
+Stat_LD_minus_FOV_angle <- summary(FOV_angle_prostate_LD_minus)
+
+
 
 ################ TODO -LIST ########################
 
 # A faire :
-# summary CBCT +/- ; LD +/-
-# t.student CBCT +/- ; LD +/-
-# wilcoxon CBCT +/- ; LD +/-
+# ANNOVA CBCT +/- ; LD +/- HOW ???????
+# t.student CBCT +/- ; LD +/- HOW ???????
+# wilcoxon CBCT +/- ; LD +/- HOW ???????
 # PCA CBCT +/- ~ dose pic ; LD +/- ~ dose pic
 # TSNE CBCT +/- ~ dose pic ; LD +/- ~ dose pic
