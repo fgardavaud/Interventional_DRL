@@ -209,7 +209,9 @@ write.xlsx(patient_comparison, 'data/comparaison_liste_patient.xlsx', sheetName 
 
 ############### main statistical analysis #################
 # global stat for unique value by exam
-Study_data_prostate_stat <- cbind(Study_data_prostate[,2:3],Study_data_prostate[,5:7], Study_data_prostate[,10:26], as.numeric(Study_data_prostate[,27])) # to select row of interest for statistical computing
+Study_data_prostate_stat <- cbind(Study_data_prostate[,2:3],Study_data_prostate[,5:7], Study_data_prostate[,10:26], as.numeric(Study_data_prostate[,28])) # to select row of interest for statistical computing
+write.csv(Study_data_prostate_stat, "output/Study_data_prostate_stat.csv")
+
 Study_data_prostate_stat_unique <- cbind(Study_data_prostate_stat[,1:14], Study_data_prostate_stat[,23]) # to select column with unique value per exam
 colnames(Study_data_prostate_stat_unique) <- c("Accession.Number","Patient.ID", "Patient_weight", "Patient.size", "BMI", "Peak.Skin.Dose",
                                                "Image.and.Fluoroscopy.DAP", "Total.Acquisition.DAP", "Total.Fluoro.DAP",
@@ -219,12 +221,14 @@ Study_data_prostate_stat_unique <- Study_data_prostate_stat_unique[!duplicated(S
 print("TNN12 is the codename in DW for non overexposure")
 print("TNN13 is the codename in DW for overexposure")
 temp_DAP_fluoro <- as.data.frame(as.numeric(levels(Study_data_prostate_stat_unique[,8]))[Study_data_prostate_stat_unique[,8]]) # convert factor with level to a dataframe with numeric value
-colnames(temp_DAP_fluoro) <- c("Total.Acquisition.DAP") # add colnames for labellization
+colnames(temp_DAP_fluoro) <- c("Total.Fluoro.DAP") # add colnames for labellization
 temp_DAP_graph <- as.data.frame(as.numeric(levels(Study_data_prostate_stat_unique[,9]))[Study_data_prostate_stat_unique[,9]]) # convert factor with level to a dataframe with numeric value
-colnames(temp_DAP_graph) <- c("Total.Fluoro.DAP") # add colnames for labellization
-Study_data_prostate_stat_unique <- cbind(Study_data_prostate_stat_unique[,1:7], temp_DAP_fluoro, temp_DAP_graph, Study_data_prostate_stat_unique[,10:15]) # bind alll columns for summary
+colnames(temp_DAP_graph) <- c("Total.Acquisition.DAP") # add colnames for labellization
+Study_data_prostate_stat_unique <- cbind(Study_data_prostate_stat_unique[,3:7], temp_DAP_fluoro, temp_DAP_graph, Study_data_prostate_stat_unique[,10:15]) # bind alll columns for summary
+write.csv(Study_data_prostate_stat_unique, "output/Study_data_prostate_stat_unique.csv")
 
 Global_stat_unique_value <- summary(Study_data_prostate_stat_unique)
+write.csv(Global_stat_unique_value, "output/stats/Global_stat_unique_value.csv")
 
 ## global stat for non unique value by exam : FOV and incidence angles
 
@@ -232,6 +236,8 @@ Study_data_prostate_stat_multiple <- Study_data_prostate_stat[ ,20:22] # to sele
 FOV_ok_list <- which(Study_data_prostate_stat_multiple$Field.of.View..cm. > 0) # to keep only FOV > 0 as FOV value = 0 it's an DoseWatch export error
 Study_data_prostate_stat_multiple <- Study_data_prostate_stat_multiple[FOV_ok_list,] # to supress FOV bad value
 Global_stat_multiple_value <- summary(Study_data_prostate_stat_multiple)
+write.csv(Global_stat_multiple_value, "output/stats/Global_stat_FOV&incidence_angle.csv")
+
 
 
 ################ CBCT acquisition analysis #############################
@@ -249,7 +255,8 @@ Patient_number_wo_CBCT <- length(unique(Study_data_prostate[,"Patient.ID"])) - P
 Exam_ID_list_CBCT <- table(Study_data_prostate_CBCT$Study_data_prostate_CBCT.Accession.number, droplevels(Study_data_prostate_CBCT$Study_data_prostate_CBCT.Irradiation.Event.Type))
 # statistical analysis on CBCT acquisition
 
-CBCT_stat <- describe(Exam_ID_list_CBCT, num.desc=c("mean","median","sd","min","max","valid.n"))
+# CBCT_stat <- describe(Exam_ID_list_CBCT, num.desc=c("mean","median","sd","min","max","valid.n"))
+# write.csv(CBCT_stat, "output/stats/CBCT_patient_stat.csv")
 
 #CBCT_mean <- mean(Exam_ID_list_CBCT)
 ### graphic to illustrate CBCT acquisition repartition
@@ -260,6 +267,10 @@ lbls <- paste(pct) # add percents to labels
 lbls <- paste(lbls,"%",sep="") # ad % to labels 
 pie(Exam_ID_list_CBCT, labels = lbls, col=rainbow(length(lbls)), main = "CBCT acquisiton number for each patient")
 dev.print(device = png, file = "output/CBCT_acquisition_number.png", width = 600, height = 400)
+lbls <- Study_data_prostate_CBCT_acquisition_num
+pie(Exam_ID_list_CBCT, labels = lbls, col=rainbow(length(lbls)), main = "CBCT acquisiton number for each patient")
+dev.print(device = png, file = "output/CBCT_acquisition_number_absolute.png", width = 600, height = 400)
+
 
 ### CBCT protocol analysis and graph
 CBCT_protocol_used <- table(droplevels(Study_data_prostate_CBCT$Study_data_prostate_CBCT.Proprietary.Type))
@@ -269,6 +280,9 @@ lbls <- paste(lbls, pct, sep = ", \n ") # add percents to labels
 lbls <- paste(lbls,"%",sep="") # ad % to labels 
 pie(CBCT_protocol_used, labels = lbls, cex = 0.8, main = "CBCT protocols used")
 dev.print(device = png, file = "output/CBCT_protocols.png", width = 600, height = 400)
+lbls <- as.numeric(CBCT_protocol_used)
+pie(CBCT_protocol_used, labels = lbls, cex = 0.8, main = "CBCT protocols used")
+dev.print(device = png, file = "output/CBCT_protocols_absolute.png", width = 600, height = 400)
 
 
 ################ FOV size analysis #############################
@@ -293,7 +307,9 @@ lbls <- paste(lbls, pct, sep = ", \n") # add percents to labels
 lbls <- paste(lbls," %",sep="") # ad % to labels 
 pie(tail(FOV_tab_total,1), labels = lbls, cex =0.9, main = "FOV distribution in all examinations")
 dev.print(device = png, file = "output/FOV_distribution.png", width = 600, height = 400)
-
+lbls <- tail(FOV_tab_total,1)
+pie(tail(FOV_tab_total,1), labels = lbls, cex =0.9, main = "FOV distribution in all examinations")
+dev.print(device = png, file = "output/FOV_distribution_asolute.png", width = 600, height = 400)
 ##########################################################################
 ##########################################################################
 ##########################################################################
@@ -353,11 +369,11 @@ pct_LD_minus <- round(head(FOV_tab_LD_total,1)/sum(head(FOV_tab_LD_total,1))*100
 lbls_total <- paste(lbls, pct_LD_total, sep = ", \n") # add percents to labels
 lbls_total <- paste(lbls_total," %",sep="") # ad % to labels 
 pie(tail(FOV_tab_LD_total,1), labels = lbls_total, cex =0.9, main = "FOV distribution with all displays configurations")
-dev.print(device = png, file = "output/FOV_LD_distribution.png", width = 600, height = 400)
+dev.print(device = png, file = "output/FOV_all_LD_distribution.png", width = 600, height = 400)
 lbls_plus <- paste(lbls, pct_LD_plus, sep = ", \n") # add percents to labels
 lbls_plus <- paste(lbls_plus," %",sep="") # ad % to labels 
 pie(FOV_tab_LD_total[2,], labels = lbls_plus, cex =0.9, main = "FOV distribution with LD configuration")
-dev.print(device = png, file = "output/FOV_LDminus_distribution.png", width = 600, height = 400)
+dev.print(device = png, file = "output/FOV_LDplus_distribution.png", width = 600, height = 400)
 lbls_minus <- paste(lbls, pct_LD_minus, sep = ", \n") # add percents to labels
 lbls_minus <- paste(lbls_minus," %",sep="") # ad % to labels
 pie(head(FOV_tab_LD_total,1), labels = lbls_minus, cex =0.9, main = "FOV distribution without LD configuration")
@@ -396,6 +412,7 @@ global_data_prostate_CBCT_plus_unique <- global_data_prostate_CBCT_plus %>% sele
                                                                                    Irradiation.Event.Type, Field.of.View..cm., LD) # to keep only right columns
 global_data_prostate_CBCT_plus_unique <- cbind(global_data_prostate_CBCT_plus_unique, temp_DAP_fluoro_plus, temp_DAP_graph_plus, temp_Patient_age_plus) # bind all columns for summary
 Stat_CBCT_plus_unique <- summary(global_data_prostate_CBCT_plus_unique)
+write.csv(Stat_CBCT_plus_unique, "output/stats/Stat_CBCT_plus_unique.csv")
 
 Data_prostate_CBCT_minus <- subset(global_data_prostate, global_data_prostate$Irradiation.Event.Type == "CBCT-") # select only rows without CBCT
 global_data_prostate_CBCT_minus <- Data_prostate_CBCT_minus[!duplicated(Data_prostate_CBCT_minus$Accession.number), ] # to keep only one row per exam to perform global stats
@@ -411,6 +428,7 @@ global_data_prostate_CBCT_minus_unique <- global_data_prostate_CBCT_minus %>% se
                                                                                      Irradiation.Event.Type, Field.of.View..cm., LD) # to keep only right columns
 global_data_prostate_CBCT_minus_unique <- cbind(global_data_prostate_CBCT_minus_unique, temp_DAP_fluoro_minus, temp_DAP_graph_minus, temp_Patient_age_minus) # bind all columns for summary
 Stat_CBCT_minus_unique <- summary(global_data_prostate_CBCT_minus_unique)
+write.csv(Stat_CBCT_minus_unique, "output/stats/Stat_CBCT_minus_unique.csv")
 
 # Anova_CBCT_minus_unique <- anova(global_data_prostate_CBCT_minus_unique)
 # stat for non unique value (e.g FOV, incidence angle) part
@@ -420,9 +438,11 @@ FOV_angle_data_prostate <- Study_data_prostate %>% select(Irradiation.Event.Type
 
 FOV_angle_prostate_CBCT_plus <- subset(FOV_angle_data_prostate, FOV_angle_data_prostate$Irradiation.Event.Ty == "CBCT+") # select only rows with CBCT
 Stat_CBCT_plus_FOV_angle <- summary(FOV_angle_prostate_CBCT_plus)
+write.csv(Stat_CBCT_plus_FOV_angle, "output/stats/Stat_CBCT_plus_FOV_angle.csv")
 
 FOV_angle_prostate_CBCT_minus <- subset(FOV_angle_data_prostate, FOV_angle_data_prostate$Irradiation.Event.Ty == "CBCT-") # select only rows without CBCT
 Stat_CBCT_minus_FOV_angle <- summary(FOV_angle_prostate_CBCT_minus)
+write.csv(Stat_CBCT_minus_FOV_angle, "output/stats/Stat_CBCT_minus_FOV_angle.csv")
 
 # Anova_CBCT_minus_FOV_angle <- anova(FOV_angle_prostate_CBCT_minus)
 # t.test(IP_dose_colon$Colon[IP_dose_colon$Logiciel == "CT-Expo"], IP_dose_colon$Colon[IP_dose_colon$Logiciel == "Duke Organ Dose"], paired=FALSE)
@@ -456,6 +476,8 @@ global_data_prostate_LD_plus_unique <- global_data_prostate_LD_plus %>% select(P
                                                                                    Irradiation.Event.Type, Field.of.View..cm., LD) # to keep only right columns
 global_data_prostate_LD_plus_unique <- cbind(global_data_prostate_LD_plus_unique, temp_DAP_fluoro_plus, temp_DAP_graph_plus, temp_Patient_age_plus) # bind all columns for summary
 Stat_LD_plus_unique <- summary(global_data_prostate_LD_plus_unique)
+write.csv(Stat_LD_plus_unique, "output/stats/Stat_LD_plus_unique.csv")
+
 
 Data_prostate_LD_minus <- subset(global_data_prostate, global_data_prostate$LD == "LD-") # select only rows without Large Display (LD)
 global_data_prostate_LD_minus <- Data_prostate_LD_minus[!duplicated(Data_prostate_LD_minus$Accession.number), ] # to keep only one row per exam to perform global stats
@@ -471,6 +493,8 @@ global_data_prostate_LD_minus_unique <- global_data_prostate_LD_minus %>% select
                                                                                      Irradiation.Event.Type, Field.of.View..cm., LD) # to keep only right columns
 global_data_prostate_LD_minus_unique <- cbind(global_data_prostate_LD_minus_unique, temp_DAP_fluoro_minus, temp_DAP_graph_minus, temp_Patient_age_minus) # bind all columns for summary
 Stat_LD_minus_unique <- summary(global_data_prostate_LD_minus_unique)
+write.csv(Stat_LD_minus_unique, "output/stats/Stat_LD_minus_unique.csv")
+
 # Anova_LD_minus_unique <- anova(global_data_prostate_LD_minus_unique)
 
 # stat for non unique value (e.g FOV, incidence angle) part
@@ -480,9 +504,11 @@ FOV_angle_data_prostate <- Study_data_prostate %>% select(Irradiation.Event.Type
 
 FOV_angle_prostate_LD_plus <- subset(FOV_angle_data_prostate, FOV_angle_data_prostate$LD == "LD+") # select only rows with Large Display (LD)
 Stat_LD_plus_FOV_angle <- summary(FOV_angle_prostate_LD_plus)
+write.csv(Stat_LD_plus_FOV_angle, "output/stats/Stat_LD_plus_FOV_angle.csv")
 
 FOV_angle_prostate_LD_minus <- subset(FOV_angle_data_prostate, FOV_angle_data_prostate$LD == "LD-") # select only rows without Large Display (LD
 Stat_LD_minus_FOV_angle <- summary(FOV_angle_prostate_LD_minus)
+write.csv(Stat_LD_minus_FOV_angle, "output/stats/Stat_LD_minus_FOV_angle.csv")
 
 
 
