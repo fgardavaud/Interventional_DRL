@@ -10,7 +10,7 @@
 
 ###################### set-up section ################################
 
-# Set the projet path to the root level
+# Set the projet path to the root level -
 root.dir = rprojroot::find_rstudio_root_file()
 
 # # load readxl package to read easyly Excel file with an install conditon
