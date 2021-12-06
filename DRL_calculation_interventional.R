@@ -60,6 +60,12 @@ if(!require(grateful)){
   library(grateful)
 }
 
+# load Rcommander GUI for basic stat analysis
+if(!require(Rcmdr)){
+  install.packages("Rcmdr")
+  library(Rcmdr)
+}
+
 ############################### data import section ##################################
 
 
@@ -149,8 +155,44 @@ Study_data_selected_age <- Study_data_age %>% select(Patient.last.name, Study.da
 ############### column format conversion #################
 # convert patient years in numeric
 Study_data_selected_age$Patient.Age <- as.numeric(Study_data_selected_age$Patient.Age)
-Study_data_selected_age$Total.Acquisition.DAP..mGy.cm.. <- as.numeric(Study_data_selected_age$Total.Acquisition.DAP..mGy.cm..)
-Study_data_selected_age$Total.Fluoro.DAP..mGy.cm.. <- as.numeric(Study_data_selected_age$Total.Fluoro.DAP..mGy.cm..)
+
+############### Remove duplicated lines in order to have 1 line by exam ############
+## /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+# if you have several exam without accession number associated the following.
+# command line will only keep the first exam without accession number 
+#  SO YOU COULD LOST DATA INFORMATION
+# /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+Study_data_without_duplicates <- Study_data_selected_age[!duplicated(Study_data_selected_age$Accession.number), ] # to keep only one row for each exam time.
+
+# keep only Standard Study description with 20 exams or more 
+
+dfc <- Study_data_without_duplicates %>% count(Standard.study.description) # add a counter for each standard study description
+# add a new column with the previous counter
+Study_data_without_duplicates$n_occurence <- with(dfc, n[match(Study_data_without_duplicates$Standard.study.description,Standard.study.description)])
+# keep only Standard study with 20 exams or more
+Study_data_without_duplicates_stats <- Study_data_without_duplicates %>%
+  group_by(Standard.study.description) %>%
+  filter(n() > 19)
+
+# list Study Dedcription with interest
+list_study_description <- unique(Study_data_without_duplicates_stats$Standard.study.description)
+
+# print in terminal the Standard Study Description to consider 
+print("In this study you have to consider the following description to perform DRL analysis (20 exams or more) :")
+print(cat(unique(Study_data_without_duplicates_stats$Standard.study.description)))
+print(paste0("The Study description number you have to consider is : ", length(unique(Study_data_without_duplicates_stats$Standard.study.description))))
+
+# clean Global environment
+rm(dfc, DoseWatch_Selected_data, Study_data_age)
+
+
+############### Match Study description with DRL available #################
+
+# perform stat on more frequent exam
+
+# AJOUTER BOUCLE FOR POUR TOUTES LES DESCRIPTION D'EXAMEN OU VOIR OUTIL DPLYR POUR LE FAIRE
+
+
 
 
 
