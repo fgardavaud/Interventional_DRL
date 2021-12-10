@@ -36,6 +36,7 @@ if(!require(doMC)){
 #   install.packages("doParallel")
 #   library(doParallel)
 # }
+
 # load tictoc package to measure running time of R code
 if(!require(tictoc)){
   install.packages("tictoc")
@@ -60,11 +61,17 @@ if(!require(grateful)){
   library(grateful)
 }
 
-# load Rcommander GUI for basic stat analysis
-if(!require(Rcmdr)){
-  install.packages("Rcmdr")
-  library(Rcmdr)
+# load prettyR to perform tailored statistical analysis
+if(!require(prettyR)){
+  install.packages("prettyR")
+  library(prettyR)
 }
+
+# # load Rcommander GUI for basic stat analysis
+# if(!require(Rcmdr)){
+#   install.packages("Rcmdr")
+#   library(Rcmdr)
+# }
 
 ############################### data import section ##################################
 
@@ -95,7 +102,7 @@ toc()
 
 
 ################################## data tailoring section ##################################
-# data filter to keep only interested columns for this study
+# data selection to keep only interested columns for this study
 DoseWatch_Selected_data <- DoseWatch_export %>% select(Patient.last.name, Study.date..YYYY.MM.DD., Series.Time, Patient.ID, Accession.number,
                                                        Patient.birthdate..YYYY.MM.DD.,
                                                        Patient.weight..kg., Patient.size..cm.,
@@ -164,34 +171,58 @@ Study_data_selected_age$Patient.Age <- as.numeric(Study_data_selected_age$Patien
 # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
 Study_data_without_duplicates <- Study_data_selected_age[!duplicated(Study_data_selected_age$Accession.number), ] # to keep only one row for each exam time.
 
-# keep only Standard Study description with 20 exams or more 
+# select only right BMI for DRL analysis between 18 and 35 in France
+Study_data_without_duplicates <- Study_data_without_duplicates %>% filter(between(BMI, 18, 35))
+
+# keep only Standard Study description with 10 exams or more (condition in French law)
 
 dfc <- Study_data_without_duplicates %>% count(Standard.study.description) # add a counter for each standard study description
 # add a new column with the previous counter
 Study_data_without_duplicates$n_occurence <- with(dfc, n[match(Study_data_without_duplicates$Standard.study.description,Standard.study.description)])
-# keep only Standard study with 20 exams or more
-Study_data_without_duplicates_stats <- Study_data_without_duplicates %>%
+# keep only Standard study with 10 exams or more
+Exam_data_frequent_wo_duplicates <- Study_data_without_duplicates %>%
   group_by(Standard.study.description) %>%
-  filter(n() > 19)
+  filter(n() > 9)
+# keep only columns of interest for statistical analysis
+Exam_data_frequent_wo_duplicates <- Exam_data_frequent_wo_duplicates %>% select(Patient.weight..kg., Patient.size..cm.,
+                                            BMI, Standard.study.description, Peak.Skin.Dose..mGy.,
+                                            Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
+                                            Total.Air.Kerma..mGy.,
+                                            Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                            Irradiation.Event.Type,Proprietary.Type, n_occurence)
 
-# list Study Dedcription with interest
-list_study_description <- unique(Study_data_without_duplicates_stats$Standard.study.description)
+# list Study Description with interest
+list_study_description <- unique(Exam_data_frequent_wo_duplicates$Standard.study.description)
 
 # print in terminal the Standard Study Description to consider 
-print("In this study you have to consider the following description to perform DRL analysis (20 exams or more) :")
-print(cat(unique(Study_data_without_duplicates_stats$Standard.study.description)))
-print(paste0("The Study description number you have to consider is : ", length(unique(Study_data_without_duplicates_stats$Standard.study.description))))
+print("In this study you have to consider the following description to perform DRL analysis (10 exams or more) :")
+print(cat(unique(Exam_data_frequent_wo_duplicates$Standard.study.description)))
+print(paste0("The Study description number you have to consider is : ", length(unique(Exam_data_frequent_wo_duplicates$Standard.study.description))))
 
 # clean Global environment
-rm(dfc, DoseWatch_Selected_data, Study_data_age)
+rm(dfc, DoseWatch_Selected_data, Study_data_age, cores)
 
 
-############### Match Study description with DRL available #################
+############### Stat analysis #################
 
-# perform stat on more frequent exam
+# Plot histogram for each frequent exam description
 
-# AJOUTER BOUCLE FOR POUR TOUTES LES DESCRIPTION D'EXAMEN OU VOIR OUTIL DPLYR POUR LE FAIRE
+ggplot(Exam_data_frequent_wo_duplicates) +
+ aes(x = Standard.study.description) +
+ geom_bar(fill = "#9B5D5D") +
+ labs(x = "Description d'examen", y = "Nombre d'actes", title = "Nombre d'examens selon l'acte clinique pour des patients d'IMC standard",
+ caption = "histo_exam") +
+ theme_minimal()
 
+# loop to create subset to contain only data asssociated for only one exam description
+for (exam_description in list_study_description) { 
+DRL_group_description <- paste("NRD_group_",exam_description, sep = "")
+assign(DRL_group_description,Exam_data_frequent_wo_duplicates %>% filter(Standard.study.description == exam_description))
+}
+
+# perform main stats for each exam description
+
+describe(dose.DOD_IP_NB, num.desc=c("mean","median","sd","min","max","valid.n"))
 
 
 
