@@ -280,7 +280,7 @@ Local_DRL <- Exam_data_frequent_wo_duplicates%>%
     Exam_number = n(),
 )
 write.xlsx(Local_DRL, 'output/Local_DRL.xlsx', sheetName = "Local_DRL",
-           col.names = TRUE, row.names = TRUE, append = FALSE, overwrite = TRUE)
+           colNames = TRUE, rowNames = FALSE, append = FALSE, overwrite = TRUE) #rowNames = FALSE to suprres the first column with index
 
 
 # flights %>%
@@ -312,12 +312,13 @@ cite_packages(out.format = "docx", out.dir = file.path(getwd(), "output/"))
 
 
 
-################ DRL establishement section ########################
+################ TO-DO list ########################
 
 # A faire :
-# RECUPERER SI Irradiation.Event.Type comporte au moins une fois "ROTATIONAL_ACQUISITION"
+# Sélectionner bonnes colonnes et renommer DRL_data dataframe pour chaque description d'examen avec les labels de l'IRSN
+# RECUPERER SI Irradiation.Event.Type comporte au moins une fois "ROTATIONAL_ACQUISITION". Retravailler Exam_data_frequent_wo_duplicates datframe 
 # si oui => CBCT; sinon => pas de CBCT.
-# prendre aléatoirement dans chaque subset 10 lignes consécutives et généré un fichier .csv avec le même canevas que le fichier .csv de l'IRSN.
+# générer un fichier .csv avec le même canevas que le fichier .csv de l'IRSN.
 # mettre condition sur :
-# PSD, Air Kerma total, DAP total ≠ NULL.
+# optionnel : PSD, Air Kerma total, DAP total ≠ NULL.
 
