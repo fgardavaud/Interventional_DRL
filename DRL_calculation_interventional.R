@@ -112,7 +112,7 @@ DoseWatch_Selected_data <- DoseWatch_export %>% select(Patient.last.name, Study.
                                                        Total.Air.Kerma..mGy.,
                                                        Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
                                                        Irradiation.Event.Type,Proprietary.Type, Dose.Preference,
-                                                       ) # to select column of interest and keeping the column's name
+) # to select column of interest and keeping the column's name
 
 # convert Series.time, Patient Birthdate and Study date  columns in right time format
 DoseWatch_Selected_data <- DoseWatch_Selected_data %>%
@@ -185,11 +185,11 @@ Exam_data_frequent_wo_duplicates <- Study_data_without_duplicates %>%
   filter(n() > 9)
 # keep only columns of interest for statistical analysis
 Exam_data_frequent_wo_duplicates <- Exam_data_frequent_wo_duplicates %>% select(Patient.weight..kg., Patient.size..cm.,
-                                            BMI, Standard.study.description, Peak.Skin.Dose..mGy.,
-                                            Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
-                                            Total.Air.Kerma..mGy.,
-                                            Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
-                                            Irradiation.Event.Type,Proprietary.Type, n_occurence)
+                                                                                BMI, Standard.study.description, Peak.Skin.Dose..mGy.,
+                                                                                Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
+                                                                                Total.Air.Kerma..mGy.,
+                                                                                Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                                                                Irradiation.Event.Type,Proprietary.Type, n_occurence)
 
 # list Study Description with interest
 list_study_description <- unique(Exam_data_frequent_wo_duplicates$Standard.study.description)
@@ -200,36 +200,110 @@ print(cat(unique(Exam_data_frequent_wo_duplicates$Standard.study.description)))
 print(paste0("The Study description number you have to consider is : ", length(unique(Exam_data_frequent_wo_duplicates$Standard.study.description))))
 
 # clean Global environment
-rm(dfc, DoseWatch_Selected_data, Study_data_age, cores)
+rm(dfc, DoseWatch_Selected_data, Study_data_age)
 
 
 ############### Stat analysis #################
 
 # Plot histogram for each frequent exam description
+Exam_data_frequent_wo_duplicates %>%
+  filter(n_occurence >= 20L) %>%
+  ggplot() +
+  aes(x = Standard.study.description) +
+  geom_bar(fill = "#D96748") +
+  labs(x = "Description d'examen", y = "Nombre d'actes", title = "Nombre d'examens (n > 19) selon l'acte clinique pour des patients d'IMC standard",
+       caption = "histo_exam") +
+  theme_gray()
+ggsave(path = "output/", filename = "Frequent_Exam_Description_histogram.png", width = 12)
 
-ggplot(Exam_data_frequent_wo_duplicates) +
- aes(x = Standard.study.description) +
- geom_bar(fill = "#9B5D5D") +
- labs(x = "Description d'examen", y = "Nombre d'actes", title = "Nombre d'examens selon l'acte clinique pour des patients d'IMC standard",
- caption = "histo_exam") +
- theme_minimal()
+# Plot PSD boxplot for each frequent exam description
+Exam_data_frequent_wo_duplicates %>%
+  filter(n_occurence >= 20L) %>%
+  ggplot() +
+  aes(x = Standard.study.description, y = Peak.Skin.Dose..mGy.) +
+  geom_boxplot(shape = "circle", fill = "#D96748") +
+  labs(x = "Description d'examen", y = "Dose pic à la peau (mGy)", 
+       title = "Distribution de la dose pic à la peau pour les type d'exams les plus fréquent (n >19)") +
+  theme_gray()
+ggsave(path = "output/", filename = "PSD_boxplot.png", width = 12)
 
-# loop to create subset to contain only data asssociated for only one exam description
-for (exam_description in list_study_description) { 
-DRL_group_description <- paste("NRD_group_",exam_description, sep = "")
-assign(DRL_group_description,Exam_data_frequent_wo_duplicates %>% filter(Standard.study.description == exam_description))
+# loop to create subset to contain only data associated for only one exam description
+for (exam_description in list_study_description) {
+  DRL_data <-  Exam_data_frequent_wo_duplicates %>% filter(Standard.study.description == exam_description) # to select only current exam description data
+  exam_description <- gsub("[ ]", "_", exam_description, perl=TRUE) # replace " " by "_" from the date value
+  DRL_name <- paste("DRL_data_",exam_description, sep = "") # to generate current exam description name for data
+  assign(DRL_name, DRL_data) # to generate current exam description data with associated name
+  path_name <- paste("output/", DRL_name, ".xlsx", sep ="") # create path name to save Excel file
+  write.xlsx(DRL_data, path_name, sheetName = DRL_name,
+             colNames = TRUE, rowNames = FALSE, append = TRUE, overwrite = TRUE) # create Excel file of main stat for current exam description
+  # DRL_stat_name <- paste("DRL_stat_",exam_description, sep = "") # to generate current exam description name for associated stat
+  # DRL_stat <- describe(DRL_data, num.desc=c("mean","median","sd","min","max","valid.n")) # to generate current exam description name for stat
+  # assign(DRL_stat_name, DRL_stat) # to generate current exam description stat with associated name
+  rm(DRL_data, DRL_name, path_name) # clean Global environment
 }
 
-# perform main stats for each exam description
+# get statistics (mean, sd, max, min) round at unit for each frequent exam description
+Local_DRL <- Exam_data_frequent_wo_duplicates%>%
+  group_by(Standard.study.description) %>%
+  summarise(
+    # stats for peak skin dose data in mGy
+    mean_PSD_mGy = round(mean(Peak.Skin.Dose..mGy., na.rm = TRUE),0),
+    med_PSD_mGy = round(median(Peak.Skin.Dose..mGy., na.rm = TRUE),0),
+    sd_PSD_mGy = round(sd(Peak.Skin.Dose..mGy., na.rm = TRUE),0),
+    max_PSD_mGy = round(max(Peak.Skin.Dose..mGy., na.rm = TRUE),0),
+    min_PSD_mGy = round(min(Peak.Skin.Dose..mGy., na.rm = TRUE),0),
+    # stats for Total Dose Area Product data in mGy.cm^2
+    mean_DAP_mGy.cm2 = round(mean(Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., na.rm = TRUE),0),
+    med_DAP_mGy.cm2 = round(median(Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., na.rm = TRUE),0),
+    sd_DAP_mGy.cm2 = round(sd(Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., na.rm = TRUE),0),
+    max_DAP_mGy.cm2 = round(max(Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., na.rm = TRUE),0),
+    min_DAP_mGy.cm2 = round(min(Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2., na.rm = TRUE),0),
+    # stats for total air kerma data in mGy
+    mean_AK_mGy = round(mean(Total.Air.Kerma..mGy., na.rm = TRUE),0),
+    med_AK_mGy = round(median(Total.Air.Kerma..mGy., na.rm = TRUE),0),
+    sd_AK_mGy = round(sd(Total.Air.Kerma..mGy., na.rm = TRUE),0),
+    max_AK_mGy = round(max(Total.Air.Kerma..mGy., na.rm = TRUE),0),
+    min_AK_mGy = round(min(Total.Air.Kerma..mGy., na.rm = TRUE),0),
+    # stats for fluoroscopy time data in seconds
+    mean_Scop_Time_s = round(mean(Total.Time.of.Fluoroscopy..s., na.rm = TRUE),0),
+    med_Scop_Time_s = round(median(Total.Time.of.Fluoroscopy..s., na.rm = TRUE),0),
+    sd_Scop_Time_s = round(sd(Total.Time.of.Fluoroscopy..s., na.rm = TRUE),0),
+    max_Scop_Time_s = round(max(Total.Time.of.Fluoroscopy..s., na.rm = TRUE),0),
+    min_Scop_Time_s = round(min(Total.Time.of.Fluoroscopy..s., na.rm = TRUE),0),
+    # stats for acquisition (graphy and CBCT/3D) number data
+    mean_Acq_Num = round(mean(Number.of.Acquisition.Series, na.rm = TRUE),0),
+    med_Acq_Num  = round(median(Number.of.Acquisition.Series, na.rm = TRUE),0),
+    sd_Acq_Num = round(sd(Number.of.Acquisition.Series, na.rm = TRUE),0),
+    max_Acq_Num = round(max(Number.of.Acquisition.Series, na.rm = TRUE),0),
+    min_Acq_Num = round(min(Number.of.Acquisition.Series, na.rm = TRUE),0),
+    # Exam number
+    Exam_number = n(),
+)
+write.xlsx(Local_DRL, 'output/Local_DRL.xlsx', sheetName = "Local_DRL",
+           col.names = TRUE, row.names = TRUE, append = FALSE, overwrite = TRUE)
 
-describe(dose.DOD_IP_NB, num.desc=c("mean","median","sd","min","max","valid.n"))
+
+# flights %>%
+#   group_by(month) %>%
+#   summarise(
+#     max_delay = max(dep_delay, na.rm = TRUE),
+#     min_delay = min(dep_delay, na.rm = TRUE),
+#     mean_delay = mean(dep_delay, na.rm = TRUE)
+#   )
+# ExamAET.stat <- Patient_merge_data_all_source %>%
+#   group_by(AE.source) %>%
+#   summarise(
+#     count = n(),
+#   )
 
 
 
 
 
 
-
+## ####################### Miscellaneous #####################################
+# Create word document to list package citation
+cite_packages(out.format = "docx", out.dir = file.path(getwd(), "output/"))
 
 
 
@@ -241,15 +315,9 @@ describe(dose.DOD_IP_NB, num.desc=c("mean","median","sd","min","max","valid.n"))
 ################ DRL establishement section ########################
 
 # A faire :
-# faire des subset en fonction de la description clinique d'intérêt
-# TIPS, chimioembol hépatique, drainage biliaire, embolisation artères bronchiques, embolisation fibrome utérin, TIPS, vertébroplastie
-# colonne avec facteurs à 49 niveaux
-# attention à faire correpondre avec la labellisation locale
-# faire un test pour chaque subset pour savoir si les valeurs de la colonne Irradiation.Event.Type comporte au moins une fois "ROTATIONAL_ACQUISITION" 
-# colonne avec facteurs à 4 niveaux
+# RECUPERER SI Irradiation.Event.Type comporte au moins une fois "ROTATIONAL_ACQUISITION"
 # si oui => CBCT; sinon => pas de CBCT.
-# prendre aléatoirement dans chaque subset 10 lignes consécutives et généré un fichier .csv avec le même canave que le fichier .csv de l'IRSN.
+# prendre aléatoirement dans chaque subset 10 lignes consécutives et généré un fichier .csv avec le même canevas que le fichier .csv de l'IRSN.
 # mettre condition sur :
-  # IMC : 18 < IMC_patient < 35.
-  # PSD, Air Kerma total, DAP total ≠ NULL.
+# PSD, Air Kerma total, DAP total ≠ NULL.
 
