@@ -283,23 +283,6 @@ write.xlsx(Local_DRL, 'output/Local_DRL.xlsx', sheetName = "Local_DRL",
            colNames = TRUE, rowNames = FALSE, append = FALSE, overwrite = TRUE) #rowNames = FALSE to suprres the first column with index
 
 
-# flights %>%
-#   group_by(month) %>%
-#   summarise(
-#     max_delay = max(dep_delay, na.rm = TRUE),
-#     min_delay = min(dep_delay, na.rm = TRUE),
-#     mean_delay = mean(dep_delay, na.rm = TRUE)
-#   )
-# ExamAET.stat <- Patient_merge_data_all_source %>%
-#   group_by(AE.source) %>%
-#   summarise(
-#     count = n(),
-#   )
-
-
-
-
-
 
 ## ####################### Miscellaneous #####################################
 # Create word document to list package citation
