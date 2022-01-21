@@ -4,8 +4,8 @@
 ##                                                                  ##                                 
 ######################################################################
 
-# created by François Gardavaud
-# date : 01/14/2020
+# created by François Gardavaud, MPE, M.Sc. Medical imaging department - Tenon University Hospital
+# date : 17/01/2022
 
 
 ###################### set-up section ################################
@@ -160,8 +160,36 @@ Study_data_selected_age <- Study_data_age %>% select(Patient.last.name, Study.da
                                                      Irradiation.Event.Type,Proprietary.Type, Dose.Preference)
 
 ############### column format conversion #################
-# convert patient years in numeric
+# convert patient years in numeric in R basic language
 Study_data_selected_age$Patient.Age <- as.numeric(Study_data_selected_age$Patient.Age)
+
+# convert Irradiation.Event.Type column as factor with tidyverse library
+Study_data_selected_age %>%
+  mutate(
+    Irradiation.Event.Type = as.factor(Irradiation.Event.Type)
+  )
+
+#  add new levels for Irradiation.Event.Type as CBCT+/-
+levels(Study_data_selected_age$Irradiation.Event.Type) <- c(levels(Study_data_selected_age$Irradiation.Event.Type), "CBCT+","CBCT-")
+# rename factors for none CBCT acquisition
+Study_data_selected_age$Irradiation.Event.Type[Study_data_selected_age$Irradiation.Event.Type == 'FLUOROSCOPY'] <- 'CBCT-'
+Study_data_selected_age$Irradiation.Event.Type[Study_data_selected_age$Irradiation.Event.Type == 'STATIONARY_ACQUISITION'] <- 'CBCT-'
+Study_data_selected_age$Irradiation.Event.Type[Study_data_selected_age$Irradiation.Event.Type == 'STEPPING_ACQUISITION'] <- 'CBCT-'
+# rename factor for CBCT acquisition
+Study_data_selected_age$Irradiation.Event.Type[Study_data_selected_age$Irradiation.Event.Type == 'ROTATIONAL_ACQUISITION'] <- 'CBCT+'
+
+
+
+
+
+######### retrieve if exams have at least one CBCT acquisition ######
+
+# create AngioRot new column and put value "oui" if by accession number there is at least one CBCT otherwise put "non" value 
+# Result : detect if an exam has at least one CBCT acquisition.
+Study_data_selected_age <- Study_data_selected_age %>%
+  group_by(Accession.number) %>%
+  mutate(AngioRot=ifelse("CBCT+" %in% Irradiation.Event.Type, "oui", "non"))
+
 
 ############### Remove duplicated lines in order to have 1 line by exam ############
 ## /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
@@ -189,7 +217,12 @@ Exam_data_frequent_wo_duplicates <- Exam_data_frequent_wo_duplicates %>% select(
                                                                                 Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
                                                                                 Total.Air.Kerma..mGy.,
                                                                                 Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
-                                                                                Irradiation.Event.Type,Proprietary.Type, n_occurence)
+                                                                                Irradiation.Event.Type,Proprietary.Type, n_occurence, AngioRot)
+
+# remove rows with na value in interested columns
+Exam_data_frequent_wo_duplicates %>% drop_na(BMI, Standard.study.description,  Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
+                                             Total.Air.Kerma..mGy.,
+                                             Total.Time.of.Fluoroscopy..s.)
 
 # list Study Description with interest
 list_study_description <- unique(Exam_data_frequent_wo_duplicates$Standard.study.description)
@@ -236,9 +269,6 @@ for (exam_description in list_study_description) {
   path_name <- paste("output/", DRL_name, ".xlsx", sep ="") # create path name to save Excel file
   write.xlsx(DRL_data, path_name, sheetName = DRL_name,
              colNames = TRUE, rowNames = FALSE, append = TRUE, overwrite = TRUE) # create Excel file of main stat for current exam description
-  # DRL_stat_name <- paste("DRL_stat_",exam_description, sep = "") # to generate current exam description name for associated stat
-  # DRL_stat <- describe(DRL_data, num.desc=c("mean","median","sd","min","max","valid.n")) # to generate current exam description name for stat
-  # assign(DRL_stat_name, DRL_stat) # to generate current exam description stat with associated name
   rm(DRL_data, DRL_name, path_name) # clean Global environment
 }
 
@@ -290,18 +320,11 @@ cite_packages(out.format = "docx", out.dir = file.path(getwd(), "output/"))
 
 
 
-
-
-
-
-
 ################ TO-DO list ########################
 
 # A faire :
-# Sélectionner bonnes colonnes et renommer DRL_data dataframe pour chaque description d'examen avec les labels de l'IRSN
-# RECUPERER SI Irradiation.Event.Type comporte au moins une fois "ROTATIONAL_ACQUISITION". Retravailler Exam_data_frequent_wo_duplicates datframe 
-# si oui => CBCT; sinon => pas de CBCT.
 # générer un fichier .csv avec le même canevas que le fichier .csv de l'IRSN.
-# mettre condition sur :
-# optionnel : PSD, Air Kerma total, DAP total ≠ NULL.
+# Sélectionner bonnes colonnes et renommer DRL_data dataframe avec mutate pour chaque description d'examen avec les labels de l'IRSN
+
+
 
