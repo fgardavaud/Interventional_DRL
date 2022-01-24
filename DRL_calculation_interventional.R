@@ -5,7 +5,7 @@
 ######################################################################
 
 # created by François Gardavaud, MPE, M.Sc. Medical imaging department - Tenon University Hospital
-# date : 17/01/2022
+# date : 24/01/2022
 
 
 ###################### set-up section ################################
@@ -13,13 +13,13 @@
 # Set the projet path to the root level
 root.dir = rprojroot::find_rstudio_root_file()
 
-# load readxl package to read easyly Excel file with an install conditon
+# load readxl package to read easily Excel file with an install condition
 if(!require(readxl)){
   install.packages("readxl")
   library(readxl)
 }
 
-# load lubridate package to determine patient age from birthdate with an install conditon
+# load lubridate package to determine patient age from birthdate with an install condition
 if(!require(lubridate)){
   install.packages("lubridate")
   library(lubridate)
@@ -62,10 +62,10 @@ if(!require(grateful)){
 }
 
 # load prettyR to perform tailored statistical analysis
-if(!require(prettyR)){
-  install.packages("prettyR")
-  library(prettyR)
-}
+# if(!require(prettyR)){
+#   install.packages("prettyR")
+#   library(prettyR)
+# }
 
 # # load Rcommander GUI for basic stat analysis
 # if(!require(Rcmdr)){
@@ -110,7 +110,7 @@ DoseWatch_Selected_data <- DoseWatch_export %>% select(Patient.last.name, Study.
                                                        Peak.Skin.Dose..mGy.,
                                                        Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
                                                        Total.Air.Kerma..mGy.,
-                                                       Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                                       Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series, Total.Number.of.Radiographic.Frames,
                                                        Irradiation.Event.Type,Proprietary.Type, Dose.Preference,
 ) # to select column of interest and keeping the column's name
 
@@ -122,7 +122,7 @@ DoseWatch_Selected_data <- DoseWatch_Selected_data %>%
 # sort each line by Accession number and then by acquisition hour
 DoseWatch_Selected_data <- arrange(DoseWatch_Selected_data, Accession.number, Series.Time)
 
-######################## age patient computation #################################
+######################## age patient and study date computation #################################
 #  instance null vector with appropriate dimension to bind with Study_data
 Patient.Age <- rep(0, nrow(DoseWatch_Selected_data))
 
@@ -156,8 +156,11 @@ Study_data_selected_age <- Study_data_age %>% select(Patient.last.name, Study.da
                                                      Peak.Skin.Dose..mGy.,
                                                      Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
                                                      Total.Air.Kerma..mGy.,
-                                                     Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
+                                                     Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series, Total.Number.of.Radiographic.Frames,
                                                      Irradiation.Event.Type,Proprietary.Type, Dose.Preference)
+
+# Extract study year to label graphics titles. The corresponding first line of Study_data_selected_age is retained
+Study_year <- year(as.Date(Study_data_selected_age$Study.date..YYYY.MM.DD.[1]))
 
 ############### column format conversion #################
 # convert patient years in numeric in R basic language
@@ -179,9 +182,6 @@ Study_data_selected_age$Irradiation.Event.Type[Study_data_selected_age$Irradiati
 Study_data_selected_age$Irradiation.Event.Type[Study_data_selected_age$Irradiation.Event.Type == 'ROTATIONAL_ACQUISITION'] <- 'CBCT+'
 
 
-
-
-
 ######### retrieve if exams have at least one CBCT acquisition ######
 
 # create AngioRot new column and put value "oui" if by accession number there is at least one CBCT otherwise put "non" value 
@@ -199,25 +199,27 @@ Study_data_selected_age <- Study_data_selected_age %>%
 # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
 Study_data_without_duplicates <- Study_data_selected_age[!duplicated(Study_data_selected_age$Accession.number), ] # to keep only one row for each exam time.
 
+
+############### Data tayloring ############
 # select only right BMI for DRL analysis between 18 and 35 in France
 Study_data_without_duplicates <- Study_data_without_duplicates %>% filter(between(BMI, 18, 35))
 
 # keep only Standard Study description with 10 exams or more (condition in French law)
+# dfc <- Study_data_without_duplicates %>% count(Standard.study.description) # add a counter for each standard study description
+# # add a new column with the previous counter
+# Study_data_without_duplicates$n_occurence <- with(dfc, n[match(Study_data_without_duplicates$Standard.study.description,Standard.study.description)])
 
-dfc <- Study_data_without_duplicates %>% count(Standard.study.description) # add a counter for each standard study description
-# add a new column with the previous counter
-Study_data_without_duplicates$n_occurence <- with(dfc, n[match(Study_data_without_duplicates$Standard.study.description,Standard.study.description)])
-# keep only Standard study with 10 exams or more
+# keep only Standard Study description with 10 exams or more (condition in French law)
 Exam_data_frequent_wo_duplicates <- Study_data_without_duplicates %>%
   group_by(Standard.study.description) %>%
   filter(n() > 9)
 # keep only columns of interest for statistical analysis
-Exam_data_frequent_wo_duplicates <- Exam_data_frequent_wo_duplicates %>% select(Patient.weight..kg., Patient.size..cm.,
+Exam_data_frequent_wo_duplicates <- Exam_data_frequent_wo_duplicates %>% select(Patient.Age, Patient.weight..kg., Patient.size..cm.,
                                                                                 BMI, Standard.study.description, Peak.Skin.Dose..mGy.,
                                                                                 Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
                                                                                 Total.Air.Kerma..mGy.,
-                                                                                Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series,
-                                                                                Irradiation.Event.Type,Proprietary.Type, n_occurence, AngioRot)
+                                                                                Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series, Total.Number.of.Radiographic.Frames,
+                                                                                Irradiation.Event.Type,Proprietary.Type, AngioRot)
 
 # remove rows with na value in interested columns
 Exam_data_frequent_wo_duplicates %>% drop_na(BMI, Standard.study.description,  Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
@@ -233,43 +235,67 @@ print(cat(unique(Exam_data_frequent_wo_duplicates$Standard.study.description)))
 print(paste0("The Study description number you have to consider is : ", length(unique(Exam_data_frequent_wo_duplicates$Standard.study.description))))
 
 # clean Global environment
-rm(dfc, DoseWatch_Selected_data, Study_data_age)
+rm(DoseWatch_Selected_data, Study_data_age)
 
 
 ############### Stat analysis #################
 
 # Plot histogram for each frequent exam description
 Exam_data_frequent_wo_duplicates %>%
-  filter(n_occurence >= 20L) %>%
+  filter(n() >= 20) %>%
   ggplot() +
   aes(x = Standard.study.description) +
   geom_bar(fill = "#D96748") +
-  labs(x = "Description d'examen", y = "Nombre d'actes", title = "Nombre d'examens (n > 19) selon l'acte clinique pour des patients d'IMC standard",
+  labs(x = "Description d'examen", y = "Nombre d'actes", 
+       title = paste0("Nombre d'examens (n > 19) selon l'acte clinique pour des patients d'IMC standard pour l'année ", Study_year),
        caption = "histo_exam") +
   theme_gray()
-ggsave(path = "output/", filename = "Frequent_Exam_Description_histogram.png", width = 12)
+ggsave(path = "output/", filename = paste0("Frequent_Exam_Description_histogram_",Study_year,".png"), width = 12)
 
 # Plot PSD boxplot for each frequent exam description
 Exam_data_frequent_wo_duplicates %>%
-  filter(n_occurence >= 20L) %>%
+  filter(n() >= 20) %>%
   ggplot() +
   aes(x = Standard.study.description, y = Peak.Skin.Dose..mGy.) +
   geom_boxplot(shape = "circle", fill = "#D96748") +
   labs(x = "Description d'examen", y = "Dose pic à la peau (mGy)", 
-       title = "Distribution de la dose pic à la peau pour les type d'exams les plus fréquent (n >19)") +
+       title = paste0("Distribution de la dose pic à la peau pour les type d'exams les plus fréquent (n >19) pour l'année ", Study_year)) +
   theme_gray()
-ggsave(path = "output/", filename = "PSD_boxplot.png", width = 12)
+ggsave(path = "output/", filename = paste0("PSD_boxplot_",Study_year,".png"), width = 12)
 
-# loop to create subset to contain only data associated for only one exam description
+# loop to create subset to contain only data associated for only one exam description in IRSN format
 for (exam_description in list_study_description) {
   DRL_data <-  Exam_data_frequent_wo_duplicates %>% filter(Standard.study.description == exam_description) # to select only current exam description data
+  DRL_data <- DRL_data %>% 
+    # to create column names in regards with IRSN file format (french law)
+    mutate(
+      mesriAge = Patient.Age,
+      mesriPoids = Patient.weight..kg.,
+      mesriTaille = Patient.size..cm.,
+      mesriPds = Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
+      mesriPdsUniteRef = 4, # choose manually the right DAP unit. Depends on your Dose monitoring system.
+      mesriTscopMin = 0, # choose manually the right value. Depends on your Dose monitoring system which retrieve this field in minutes or seconds.
+      mesriTscopSec = Total.Time.of.Fluoroscopy..s.,
+      mesriKerma = Total.Air.Kerma..mGy.,
+      mesriNbImgGraph = Total.Number.of.Radiographic.Frames,
+      mesriAngioRot = AngioRot
+    )
+  # to remove original columns
+  DRL_data <- DRL_data %>%  select(-c(Patient.Age, Patient.weight..kg., Patient.size..cm.,
+                                      BMI, Peak.Skin.Dose..mGy.,
+                                      Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
+                                      Total.Air.Kerma..mGy.,
+                                      Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series, Total.Number.of.Radiographic.Frames,
+                                      Irradiation.Event.Type,Proprietary.Type, AngioRot))
   exam_description <- gsub("[ ]", "_", exam_description, perl=TRUE) # replace " " by "_" from the date value
   DRL_name <- paste("DRL_data_",exam_description, sep = "") # to generate current exam description name for data
-  assign(DRL_name, DRL_data) # to generate current exam description data with associated name
-  path_name <- paste("output/", DRL_name, ".xlsx", sep ="") # create path name to save Excel file
-  write.xlsx(DRL_data, path_name, sheetName = DRL_name,
-             colNames = TRUE, rowNames = FALSE, append = TRUE, overwrite = TRUE) # create Excel file of main stat for current exam description
-  rm(DRL_data, DRL_name, path_name) # clean Global environment
+  assign(DRL_name, DRL_data) # to assign data from DRL_data to DRL_name
+  path_name <- paste("output/", DRL_name, ".csv", sep ="") # create path name to save Excel file in csv format
+  write.csv2(DRL_data[,-1], file=path_name, row.names = FALSE) # save .csv DRL file with IRSN format (french law)
+  # path_name <- paste("output/", DRL_name, ".xlsx", sep ="") # create path name to save Excel file in .xlsx format
+  # write.xlsx(DRL_data, path_name, sheetName = DRL_name,
+  #            colNames = TRUE, rowNames = FALSE, append = TRUE, overwrite = TRUE) # save .xlsx DRL file with IRSN format
+  rm(DRL_data, DRL_name, path_name) # clean Global environment 
 }
 
 # get statistics (mean, sd, max, min) round at unit for each frequent exam description
@@ -308,9 +334,9 @@ Local_DRL <- Exam_data_frequent_wo_duplicates%>%
     min_Acq_Num = round(min(Number.of.Acquisition.Series, na.rm = TRUE),0),
     # Exam number
     Exam_number = n(),
-)
-write.xlsx(Local_DRL, 'output/Local_DRL.xlsx', sheetName = "Local_DRL",
-           colNames = TRUE, rowNames = FALSE, append = FALSE, overwrite = TRUE) #rowNames = FALSE to suprres the first column with index
+  )
+write.xlsx(Local_DRL, paste0('output/Local_DRL_',Study_year,'.xlsx'), sheetName = paste0("Local_DRL_",Study_year),
+           colNames = TRUE, rowNames = FALSE, append = FALSE, overwrite = TRUE) #rowNames = FALSE to suppress the first column with index
 
 
 
@@ -323,8 +349,11 @@ cite_packages(out.format = "docx", out.dir = file.path(getwd(), "output/"))
 ################ TO-DO list ########################
 
 # A faire :
-# générer un fichier .csv avec le même canevas que le fichier .csv de l'IRSN.
-# Sélectionner bonnes colonnes et renommer DRL_data dataframe avec mutate pour chaque description d'examen avec les labels de l'IRSN
+# machine learning pour savoir si un examen a une description d'examen abérante
+# Créer un fichier excel template avec :
+#                                     1 colonne de description d'examen National/IRSN
+#                                     Des colonnes avec les valeurs des NRD/VGD issues d'une autre feuille Excel
+#                                     Mettre une règle de couleur pour savoir si valuer locale sup. ou inf. par rapport aux références nationnales.
 
 
 
