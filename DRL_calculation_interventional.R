@@ -273,28 +273,34 @@ for (exam_description in list_study_description) {
       mesriPoids = Patient.weight..kg.,
       mesriTaille = Patient.size..cm.,
       mesriPds = Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
-      mesriPdsUniteRef = 4, # choose manually the right DAP unit. Depends on your Dose monitoring system.
+      mesriUnitePdsRef = 3, # choose manually the right DAP unit. Depends on your Dose monitoring system.
       mesriTscopMin = 0, # choose manually the right value. Depends on your Dose monitoring system which retrieve this field in minutes or seconds.
       mesriTscopSec = Total.Time.of.Fluoroscopy..s.,
       mesriKerma = Total.Air.Kerma..mGy.,
       mesriNbImgGraph = Total.Number.of.Radiographic.Frames,
       mesriAngioRot = AngioRot
     )
-  # to remove original columns
-  DRL_data <- DRL_data %>%  select(-c(Patient.Age, Patient.weight..kg., Patient.size..cm.,
-                                      BMI, Peak.Skin.Dose..mGy.,
-                                      Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
-                                      Total.Air.Kerma..mGy.,
-                                      Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series, Total.Number.of.Radiographic.Frames,
-                                      Irradiation.Event.Type,Proprietary.Type, AngioRot))
+    # to remove original columns
+    DRL_data <- DRL_data %>%  select(-c(Patient.Age, Patient.weight..kg., Patient.size..cm.,
+              BMI, Peak.Skin.Dose..mGy.,
+              Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
+              Total.Air.Kerma..mGy.,
+              Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series, Total.Number.of.Radiographic.Frames,
+              Irradiation.Event.Type,Proprietary.Type, AngioRot))
   exam_description <- gsub("[ ]", "_", exam_description, perl=TRUE) # replace " " by "_" from the date value
   DRL_name <- paste("DRL_data_",exam_description, sep = "") # to generate current exam description name for data
   assign(DRL_name, DRL_data) # to assign data from DRL_data to DRL_name
   path_name <- paste("output/", DRL_name, ".csv", sep ="") # create path name to save Excel file in csv format
-  write.csv2(DRL_data[,-1], file=path_name, row.names = FALSE) # save .csv DRL file with IRSN format (french law)
-  # path_name <- paste("output/", DRL_name, ".xlsx", sep ="") # create path name to save Excel file in .xlsx format
-  # write.xlsx(DRL_data, path_name, sheetName = DRL_name,
-  #            colNames = TRUE, rowNames = FALSE, append = TRUE, overwrite = TRUE) # save .xlsx DRL file with IRSN format
+  write.csv2(DRL_data[,-1], file=path_name, row.names = FALSE, fileEncoding = "Windows-1252") # save .csv DRL file with IRSN format (french law)
+
+  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+  
+  # You have to open in Excel the output .csv files and convert them in MS-DOS format even if it seems to be the case
+  
+  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+  
   rm(DRL_data, DRL_name, path_name) # clean Global environment 
 }
 
@@ -334,7 +340,13 @@ Local_DRL <- Exam_data_frequent_wo_duplicates%>%
     min_Acq_Num = round(min(Number.of.Acquisition.Series, na.rm = TRUE),0),
     # Exam number
     Exam_number = n(),
-  )
+    # stats for BMI
+    mean_BMI = round(mean(BMI, na.rm = TRUE),0),
+    med_BMI = round(median(BMI, na.rm = TRUE),0),
+    sd_BMI = round(sd(BMI, na.rm = TRUE),0),
+    max_BMI = round(max(BMI, na.rm = TRUE),0),
+    min_BMI = round(min(BMI, na.rm = TRUE),0),
+)
 write.xlsx(Local_DRL, paste0('output/Local_DRL_',Study_year,'.xlsx'), sheetName = paste0("Local_DRL_",Study_year),
            colNames = TRUE, rowNames = FALSE, append = FALSE, overwrite = TRUE) #rowNames = FALSE to suppress the first column with index
 
