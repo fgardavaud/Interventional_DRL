@@ -238,7 +238,51 @@ print(paste0("The Study description number you have to consider is : ", length(u
 rm(DoseWatch_Selected_data, Study_data_age)
 
 
-############### Stat analysis #################
+############### DRL files generation #################
+
+
+# loop to create subset to contain only data associated for only one exam description in IRSN format
+for (exam_description in list_study_description) {
+  DRL_data <-  Exam_data_frequent_wo_duplicates %>% filter(Standard.study.description == exam_description) # to select only current exam description data
+  DRL_data <- DRL_data %>% 
+    # to create column names in regards with IRSN file format (french law)
+    mutate(
+      mesriAge = Patient.Age,
+      mesriPoids = Patient.weight..kg.,
+      mesriTaille = Patient.size..cm.,
+      mesriPds = Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
+      mesriUnitePdsRef = 3, # choose manually the right DAP unit. Depends on your Dose monitoring system.
+      mesriTscopMin = 0, # choose manually the right value. Depends on your Dose monitoring system which retrieve this field in minutes or seconds.
+      mesriTscopSec = Total.Time.of.Fluoroscopy..s.,
+      mesriKerma = Total.Air.Kerma..mGy.,
+      mesriNbImgGraph = Total.Number.of.Radiographic.Frames,
+      mesriAngioRot = AngioRot
+    )
+  # to remove original columns
+  DRL_data <- DRL_data %>%  select(-c(Patient.Age, Patient.weight..kg., Patient.size..cm.,
+                                      BMI, Peak.Skin.Dose..mGy.,
+                                      Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
+                                      Total.Air.Kerma..mGy.,
+                                      Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series, Total.Number.of.Radiographic.Frames,
+                                      Irradiation.Event.Type,Proprietary.Type, AngioRot))
+  exam_description <- gsub("[ ]", "_", exam_description, perl=TRUE) # replace " " by "_" from the date value
+  DRL_name <- paste("DRL_data_",exam_description, sep = "") # to generate current exam description name for data
+  assign(DRL_name, DRL_data) # to assign data from DRL_data to DRL_name
+  path_name <- paste("output/", DRL_name, ".csv", sep ="") # create path name to save Excel file in csv format
+  write.csv2(DRL_data[,-1], file=path_name, row.names = FALSE, fileEncoding = "Windows-1252") # save .csv DRL file with IRSN format (french law)
+  
+  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+  
+  # You have to open in Excel the output .csv files and convert them in MS-DOS format even if it seems to be the case
+  
+  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+  
+  rm(DRL_data, DRL_name, path_name) # clean Global environment 
+}
+
+############### Stat and graphics analysis #################
 
 # Plot histogram for each frequent exam description
 Exam_data_frequent_wo_duplicates %>%
@@ -297,47 +341,6 @@ Exam_data_frequent_wo_duplicates %>%
   theme_gray()
 ggsave(path = "output/", filename = paste0("FT_boxplot_",Study_year,".png"), width = 12)
 
-# loop to create subset to contain only data associated for only one exam description in IRSN format
-for (exam_description in list_study_description) {
-  DRL_data <-  Exam_data_frequent_wo_duplicates %>% filter(Standard.study.description == exam_description) # to select only current exam description data
-  DRL_data <- DRL_data %>% 
-    # to create column names in regards with IRSN file format (french law)
-    mutate(
-      mesriAge = Patient.Age,
-      mesriPoids = Patient.weight..kg.,
-      mesriTaille = Patient.size..cm.,
-      mesriPds = Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
-      mesriUnitePdsRef = 3, # choose manually the right DAP unit. Depends on your Dose monitoring system.
-      mesriTscopMin = 0, # choose manually the right value. Depends on your Dose monitoring system which retrieve this field in minutes or seconds.
-      mesriTscopSec = Total.Time.of.Fluoroscopy..s.,
-      mesriKerma = Total.Air.Kerma..mGy.,
-      mesriNbImgGraph = Total.Number.of.Radiographic.Frames,
-      mesriAngioRot = AngioRot
-    )
-  # to remove original columns
-  DRL_data <- DRL_data %>%  select(-c(Patient.Age, Patient.weight..kg., Patient.size..cm.,
-                                      BMI, Peak.Skin.Dose..mGy.,
-                                      Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.,
-                                      Total.Air.Kerma..mGy.,
-                                      Total.Time.of.Fluoroscopy..s., Number.of.Acquisition.Series, Total.Number.of.Radiographic.Frames,
-                                      Irradiation.Event.Type,Proprietary.Type, AngioRot))
-  exam_description <- gsub("[ ]", "_", exam_description, perl=TRUE) # replace " " by "_" from the date value
-  DRL_name <- paste("DRL_data_",exam_description, sep = "") # to generate current exam description name for data
-  assign(DRL_name, DRL_data) # to assign data from DRL_data to DRL_name
-  path_name <- paste("output/", DRL_name, ".csv", sep ="") # create path name to save Excel file in csv format
-  write.csv2(DRL_data[,-1], file=path_name, row.names = FALSE, fileEncoding = "Windows-1252") # save .csv DRL file with IRSN format (french law)
-  
-  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
-  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
-  
-  # You have to open in Excel the output .csv files and convert them in MS-DOS format even if it seems to be the case
-  
-  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
-  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
-  
-  rm(DRL_data, DRL_name, path_name) # clean Global environment 
-}
-
 # get statistics (mean, sd, max, min) round at unit for each frequent exam description
 Local_DRL <- Exam_data_frequent_wo_duplicates%>%
   group_by(Standard.study.description) %>%
@@ -394,14 +397,7 @@ rm(exam_description,skip_content,Patient.Age,all_content)
 cite_packages(out.format = "docx")
 
 
-################ TO-DO list ########################
 
-# A faire :
-# machine learning pour savoir si un examen a une description d'examen abérante
-# Créer un fichier excel template avec :
-#                                     1 colonne de description d'examen National/IRSN
-#                                     Des colonnes avec les valeurs des NRD/VGD issues d'une autre feuille Excel
-#                                     Mettre une règle de couleur pour savoir si valuer locale sup. ou inf. par rapport aux références nationnales.
 
 
 
