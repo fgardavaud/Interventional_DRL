@@ -28,4 +28,12 @@ This script have been tested in R 4.2.2 version in Rstudio v2022.12.0+353 in mac
 
 # Additional R packages list available from CRAN
 
-![](images/image-94367853.png)
+| **Package** | **Version** | **Citation**                                    |
+|-------------|-------------|-------------------------------------------------|
+| base        | 4.2.2       | R Core Team (2022)                              |
+| doMC        | 1.3.8       | Analytics and Weston (2022)                     |
+| grateful    | 0.1.11      | Rodríguez-Sánchez, Jackson, and Hutchins (2022) |
+| openxlsx    | 4.2.5.1     | Schauberger and Walker (2022)                   |
+| rprojroot   | 2.0.3       | Müller (2022)                                   |
+| tictoc      | 2.0.3       | Izrailev (2022)                                 |
+| tidyverse   | 1.3.2       | Wickham et al. (2019)                           |
