@@ -6,6 +6,8 @@ Script in R language to extract data in DoseWatch database to established DRL in
 
 To run the script you just have to clone or download this repo and follow the severals instructions below.
 
+[![Download](https://img.shields.io/badge/DRL-download-red)](https://github.com/fgardavaud/Interventional_DRL/archive/refs/heads/master.zip)
+
 # Prerequisite
 
 Several R packages are mandatory but the script analyze your system and installs, if necessary, missing packages.
