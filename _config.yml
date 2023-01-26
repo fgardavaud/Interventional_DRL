@@ -1,4 +1,4 @@
 theme: jekyll-theme-architect
 # show_downloads: "true"
-title: ProtoEnhance
-description: A software to tailor and follow-up CT protocols for GE modalities
+title: DRL computation
+description: A script to generate DRL tailored to French law for an interventional room with DoseWatch database
