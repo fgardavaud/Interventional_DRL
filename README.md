@@ -41,3 +41,5 @@ This script has been tested in R 4.2.2 version in Rstudio v2022.12.0+353 in macO
 | rprojroot   | 2.0.3       | Müller (2022)                                   |
 | tictoc      | 2.0.3       | Izrailev (2022)                                 |
 | tidyverse   | 1.3.2       | Wickham et al. (2019)                           |
+
+# [Return to homepage](https://fgardavaud.github.io/)
