@@ -30,3 +30,6 @@ Thumbs.db
 # too large file
 *.csv
 *.xlsx
+grateful-citations.docx
+grateful-refs.bib
+grateful-report.Rmd
