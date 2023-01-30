@@ -2,6 +2,9 @@
 
 Script in R langage to extract data in DoseWatch Database to established DRL in interventional radiology in regards with French law. The script generate also DRL statistics and boxplot on the major dose parameters.
 
+You can download the project at this link even if it's recommended to clone or fork the repo :
+[![Download](https://img.shields.io/badge/DRL-download-red)](https://github.com/fgardavaud/Interventional_DRL/archive/refs/heads/master.zip)
+
 # Prerequisite
 
 Several R packages are mandatory but the script analyze your system and installs, if necessary, missing packages.
