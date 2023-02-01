@@ -47,3 +47,6 @@ This script have been tested in R 4.2.2 version in Rstudio v2022.12.0+353 in mac
 In addition with DRL .csv file generation, the script help you to understand the patient exposure with several graphics output such as PSD, DAP, air kerma metrics. You can see for instance this one (values are masked for confidentiality reasons) :
 
 ![](images/Boxplot_example.png)
+
+# [Return to home page](https://fgardavaud.github.io/)
+
