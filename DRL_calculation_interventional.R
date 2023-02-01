@@ -5,7 +5,7 @@
 ######################################################################
 
 # created by François Gardavaud, MPE, M.Sc. Medical imaging department - Tenon University Hospital
-# date : 24/01/2022
+# initial creation date : 24/01/2022
 
 
 ###################### set-up section ################################
@@ -161,6 +161,8 @@ Study_data_selected_age <- Study_data_age %>% select(Patient.last.name, Study.da
 
 # Extract study year to label graphics titles. The corresponding first line of Study_data_selected_age is retained
 Study_year <- year(as.Date(Study_data_selected_age$Study.date..YYYY.MM.DD.[1]))
+# create a subfolder (if necessary) to stock the results by year
+dir.create(file.path(paste0(root.dir,"/output/",Study_year)))
 
 ############### column format conversion #################
 # convert patient years in numeric in R basic language
@@ -238,8 +240,64 @@ print(paste0("The Study description number you have to consider is : ", length(u
 rm(DoseWatch_Selected_data, Study_data_age)
 
 
-############### DRL files generation #################
+############### Stat analysis #################
 
+# Plot histogram for each frequent exam description
+Exam_data_frequent_wo_duplicates %>%
+  filter(n() >= 20) %>%
+  ggplot() +
+  aes(x = Standard.study.description) +
+  geom_bar(fill = "#D96748") +
+  labs(x = "Description d'examen", y = "Nombre d'actes", 
+       title = paste0("Nombre d'examens (n > 19) selon l'acte clinique pour des patients d'IMC standard pour l'année ", Study_year),
+       caption = "histo_exam") +
+  theme_gray()
+ggsave(path = paste0("output/",Study_year), filename = paste0("Frequent_Exam_Description_histogram_",Study_year,".png"), width = 12)
+
+# Plot PSD boxplot for each frequent exam description
+Exam_data_frequent_wo_duplicates %>%
+  filter(n() >= 20) %>%
+  ggplot() +
+  aes(x = Standard.study.description, y = Peak.Skin.Dose..mGy.) +
+  geom_boxplot(shape = "circle", fill = "#D96748") +
+  labs(x = "Description d'examen", y = "Dose pic à la peau (mGy)", 
+       title = paste0("Distribution de la dose pic à la peau pour les types d'exams les plus fréquents (n >19) pour l'année ", Study_year)) +
+  theme_gray()
+ggsave(path = paste0("output/",Study_year), filename = paste0("PSD_boxplot_",Study_year,".png"), width = 12)
+
+# Plot Air Kerma boxplot for each frequent exam description
+Exam_data_frequent_wo_duplicates %>%
+  filter(n() >= 20) %>%
+  ggplot() +
+  aes(x = Standard.study.description, y = Total.Air.Kerma..mGy.) +
+  geom_boxplot(shape = "circle", fill = "#D96748") +
+  labs(x = "Description d'examen", y = "Kerma dans l'air total (mGy)", 
+       title = paste0("Distribution du kerma dans l'air pour les types d'exams les plus fréquents (n >19) pour l'année ", Study_year)) +
+  theme_gray()
+ggsave(path = paste0("output/",Study_year), filename = paste0("Air_Kerma_boxplot_",Study_year,".png"), width = 12)
+
+# Plot DAP boxplot for each frequent exam description
+Exam_data_frequent_wo_duplicates %>%
+  filter(n() >= 20) %>%
+  ggplot() +
+  aes(x = Standard.study.description, y = Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.) +
+  geom_boxplot(shape = "circle", fill = "#D96748") +
+  labs(x = "Description d'examen", y = "PDS total (mGy.cm^2)", 
+       title = paste0("Distribution du PDS pour les types d'exams les plus fréquents (n >19) pour l'année ", Study_year)) +
+  theme_gray()
+ggsave(path = paste0("output/",Study_year), filename = paste0("DAP_boxplot_",Study_year,".png"), width = 12)
+
+# Plot fluoro time boxplot for each frequent exam description
+Exam_data_frequent_wo_duplicates %>%
+  filter(n() >= 20) %>%
+  mutate(Total.Time.of.Fluoroscopy..m. = Total.Time.of.Fluoroscopy..s./60) %>%
+  ggplot() +
+  aes(x = Standard.study.description, y = Total.Time.of.Fluoroscopy..m.) +
+  geom_boxplot(shape = "circle", fill = "#D96748") +
+  labs(x = "Description d'examen", y = "Temps de fluoroscopie (min)", 
+       title = paste0("Distribution du temps de fluoroscopie pour les types d'exams les plus fréquents (n >19) pour l'année ", Study_year)) +
+  theme_gray()
+ggsave(path = paste0("output/",Study_year), filename = paste0("FT_boxplot_",Study_year,".png"), width = 12)
 
 # loop to create subset to contain only data associated for only one exam description in IRSN format
 for (exam_description in list_study_description) {
@@ -268,7 +326,7 @@ for (exam_description in list_study_description) {
   exam_description <- gsub("[ ]", "_", exam_description, perl=TRUE) # replace " " by "_" from the date value
   DRL_name <- paste("DRL_data_",exam_description, sep = "") # to generate current exam description name for data
   assign(DRL_name, DRL_data) # to assign data from DRL_data to DRL_name
-  path_name <- paste("output/", DRL_name, ".csv", sep ="") # create path name to save Excel file in csv format
+  path_name <- paste("output/",Study_year,"/", DRL_name, ".csv", sep ="") # create path name to save Excel file in csv format
   write.csv2(DRL_data[,-1], file=path_name, row.names = FALSE, fileEncoding = "Windows-1252") # save .csv DRL file with IRSN format (french law)
   
   # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
@@ -281,65 +339,6 @@ for (exam_description in list_study_description) {
   
   rm(DRL_data, DRL_name, path_name) # clean Global environment 
 }
-
-############### Stat and graphics analysis #################
-
-# Plot histogram for each frequent exam description
-Exam_data_frequent_wo_duplicates %>%
-  filter(n() >= 20) %>%
-  ggplot() +
-  aes(x = Standard.study.description) +
-  geom_bar(fill = "#D96748") +
-  labs(x = "Description d'examen", y = "Nombre d'actes", 
-       title = paste0("Nombre d'examens (n > 19) selon l'acte clinique pour des patients d'IMC standard pour l'année ", Study_year),
-       caption = "histo_exam") +
-  theme_gray()
-ggsave(path = "output/", filename = paste0("Frequent_Exam_Description_histogram_",Study_year,".png"), width = 12)
-
-# Plot PSD boxplot for each frequent exam description
-Exam_data_frequent_wo_duplicates %>%
-  filter(n() >= 20) %>%
-  ggplot() +
-  aes(x = Standard.study.description, y = Peak.Skin.Dose..mGy.) +
-  geom_boxplot(shape = "circle", fill = "#D96748") +
-  labs(x = "Description d'examen", y = "Dose pic à la peau (mGy)", 
-       title = paste0("Distribution de la dose pic à la peau pour les types d'exams les plus fréquents (n >19) pour l'année ", Study_year)) +
-  theme_gray()
-ggsave(path = "output/", filename = paste0("PSD_boxplot_",Study_year,".png"), width = 12)
-
-# Plot Air Kerma boxplot for each frequent exam description
-Exam_data_frequent_wo_duplicates %>%
-  filter(n() >= 20) %>%
-  ggplot() +
-  aes(x = Standard.study.description, y = Total.Air.Kerma..mGy.) +
-  geom_boxplot(shape = "circle", fill = "#D96748") +
-  labs(x = "Description d'examen", y = "Kerma dans l'air total (mGy)", 
-       title = paste0("Distribution du kerma dans l'air pour les types d'exams les plus fréquents (n >19) pour l'année ", Study_year)) +
-  theme_gray()
-ggsave(path = "output/", filename = paste0("Air_Kerma_boxplot_",Study_year,".png"), width = 12)
-
-# Plot DAP boxplot for each frequent exam description
-Exam_data_frequent_wo_duplicates %>%
-  filter(n() >= 20) %>%
-  ggplot() +
-  aes(x = Standard.study.description, y = Image.and.Fluoroscopy.Dose.Area.Product..mGy.cm2.) +
-  geom_boxplot(shape = "circle", fill = "#D96748") +
-  labs(x = "Description d'examen", y = "PDS total (mGy.cm^2)", 
-       title = paste0("Distribution du PDS pour les types d'exams les plus fréquents (n >19) pour l'année ", Study_year)) +
-  theme_gray()
-ggsave(path = "output/", filename = paste0("DAP_boxplot_",Study_year,".png"), width = 12)
-
-# Plot fluoro time boxplot for each frequent exam description
-Exam_data_frequent_wo_duplicates %>%
-  filter(n() >= 20) %>%
-  mutate(Total.Time.of.Fluoroscopy..m. = Total.Time.of.Fluoroscopy..s./60) %>%
-  ggplot() +
-  aes(x = Standard.study.description, y = Total.Time.of.Fluoroscopy..m.) +
-  geom_boxplot(shape = "circle", fill = "#D96748") +
-  labs(x = "Description d'examen", y = "Temps de fluoroscopie (min)", 
-       title = paste0("Distribution du temps de fluoroscopie pour les types d'exams les plus fréquents (n >19) pour l'année ", Study_year)) +
-  theme_gray()
-ggsave(path = "output/", filename = paste0("FT_boxplot_",Study_year,".png"), width = 12)
 
 # get statistics (mean, sd, max, min) round at unit for each frequent exam description
 Local_DRL <- Exam_data_frequent_wo_duplicates%>%
@@ -384,7 +383,7 @@ Local_DRL <- Exam_data_frequent_wo_duplicates%>%
     max_BMI = round(max(BMI, na.rm = TRUE),0),
     min_BMI = round(min(BMI, na.rm = TRUE),0),
   )
-write.xlsx(Local_DRL, paste0('output/Local_DRL_',Study_year,'.xlsx'), sheetName = paste0("Local_DRL_",Study_year),
+write.xlsx(Local_DRL, paste0('output/',Study_year,'/','Local_DRL_',Study_year,'.xlsx'), sheetName = paste0("Local_DRL_",Study_year),
            colNames = TRUE, rowNames = FALSE, append = FALSE, overwrite = TRUE) #rowNames = FALSE to suppress the first column with index
 
 ## ####################### Environment cleaning ##############################
