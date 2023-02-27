@@ -95,6 +95,13 @@ if(exists("DoseWatch_export")){
   skip_content = all_content[-c(1,2,3)] # to suppress the first 3 rows with bad value yield to bad header with read.csv2 function
   DoseWatch_export <- read.csv2(textConnection(skip_content), sep = ";")
   # my_all_data <- read.csv2("data_v2/Interventional_Tenon_Radiologie_detailed_data_export.csv", sep = ";")
+  
+  # # if you want to import data directly with Excel format without .csv conversion, execute the following lines
+  # myCols <- as.character(read_excel("data/Interventional_Tenon_Radiologie_detailed_data_export.xlsx", skip = 3, n_max = 1, col_names = FALSE))
+  # DoseWatch_export <- read_excel("data/Interventional_Tenon_Radiologie_detailed_data_export.xlsx", skip = 4, col_names = myCols)
+  # ## /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+  # BE CAREFUL : you will have to replace variables names in the script.
+  # /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
 }
 toc()
 
